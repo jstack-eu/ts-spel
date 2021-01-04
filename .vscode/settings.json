@@ -1,0 +1,9 @@
+{
+  "editor.formatOnSave": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "files.watcherExclude": {
+    "**/target": true
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+}
