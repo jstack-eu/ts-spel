@@ -63,7 +63,6 @@ test('should parse resulting zero', (t) => {
 });
 
 test('should parse with whitespace', (t) => {
-  console.log('ASDF', parse('14 - 13'));
   t.deepEqual(parse('14 - 13'), {
     type: 'OpMinus',
     left: {
