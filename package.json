@@ -1,6 +1,6 @@
 {
   "name": "ts-spel",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "spel parser evaluator",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
