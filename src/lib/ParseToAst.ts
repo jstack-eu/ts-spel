@@ -1,5 +1,5 @@
 import { Ast } from './Ast';
-import _stringLiteral from './stringLiteral';
+import _stringLiteral from './stringLiteralSPELStyle';
 
 // turn true for debugging.
 const logFlag = false;

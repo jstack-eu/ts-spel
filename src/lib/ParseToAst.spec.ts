@@ -128,28 +128,25 @@ test('Simple string parsing single quotes', (t) => {
   });
 });
 test('String parsing: escape characters 1 deep', (t) => {
-  t.deepEqual(parse(' "-?> \\"foo\\" dfs9 " '), {
+  t.deepEqual(parse(' "-?> ""foo"" dfs9 " '), {
     type: 'StringLiteral',
     value: '-?> "foo" dfs9 ',
   });
 });
 test('String parsing: escape characters 2 deep', (t) => {
-  t.deepEqual(parse('  "hello, I was told \\" Say \\\\"hi\\\\" \\" " '), {
+  t.deepEqual(parse('  "hello, I was told "" Say """"hi"""" "" " '), {
     type: 'StringLiteral',
-    value: 'hello, I was told " Say \\"hi\\" " ',
+    value: 'hello, I was told " Say ""hi"" " ',
   });
 });
 test('quoting', (t) => {
-  t.deepEqual(
-    parse('  "hello, I was told \\" Say \\\\"hi \'jack\' \\\\" \\" " '),
-    {
-      type: 'StringLiteral',
-      value: 'hello, I was told " Say \\"hi \'jack\' \\" " ',
-    }
-  );
+  t.deepEqual(parse('  "hello, I was told "" Say \\""hi \'jack\' \\"" "" " '), {
+    type: 'StringLiteral',
+    value: 'hello, I was told " Say \\"hi \'jack\' \\" " ',
+  });
 });
 test('mixed but starting with sq', (t) => {
-  t.deepEqual(parse("  'they said, \" tell them \\'I said hi\\' \" ' "), {
+  t.deepEqual(parse("  'they said, \" tell them ''I said hi'' \" ' "), {
     type: 'StringLiteral',
     value: 'they said, " tell them \'I said hi\' " ',
   });
