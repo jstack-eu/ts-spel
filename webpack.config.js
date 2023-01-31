@@ -7,7 +7,7 @@ module.exports = {
     'ts-spel.min': './src/index.ts',
   },
   output: {
-    path: path.resolve(__dirname, '_bundles'),
+    path: path.resolve(__dirname, 'build/main'),
     filename: '[name].js',
     libraryTarget: 'umd',
     library: 'TsSpel',

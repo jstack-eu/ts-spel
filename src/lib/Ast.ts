@@ -1,171 +1,176 @@
 export type Ast =
   | {
-      type: 'StringLiteral';
+      type: "StringLiteral";
       value: string;
     }
   | {
-      type: 'Ternary';
+      type: "Ternary";
       expression: Ast;
       ifTrue: Ast;
       ifFalse: Ast;
     }
   | {
-      type: 'VariableReference';
+      type: "VariableReference";
       variableName: string;
     }
   | {
-      type: 'SelectionFirst';
+      type: "SelectionFirst";
       nullSafeNavigation: boolean;
       expression: Ast;
     }
   | {
-      type: 'SelectionLast';
+      type: "SelectionLast";
       nullSafeNavigation: boolean;
       expression: Ast;
     }
   | {
-      type: 'SelectionAll';
+      type: "SelectionAll";
       nullSafeNavigation: boolean;
       expression: Ast;
     }
   | {
-      type: 'PropertyReference';
+      type: "PropertyReference";
       nullSafeNavigation: boolean;
       propertyName: string;
     }
   | {
-      type: 'Projection';
+      type: "Projection";
       nullSafeNavigation: boolean;
       expression: Ast;
     }
   | {
-      type: 'OpPower';
+      type: "OpPower";
       base: Ast;
       expression: Ast;
     }
   | {
-      type: 'OpPlus';
+      type: "OpPlus";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpOr';
+      type: "OpOr";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpNot';
+      type: "OpNot";
       expression: Ast;
     }
   | {
-      type: 'OpNE';
+      type: "OpNE";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpMultiply';
+      type: "OpMultiply";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpModulus';
+      type: "OpModulus";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpMinus';
+      type: "OpMinus";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpMatches';
+      type: "OpMatches";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpLT';
+      type: "OpBetween";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpLE';
+      type: "OpLT";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpGT';
+      type: "OpLE";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpGE';
+      type: "OpGT";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpEQ';
+      type: "OpGE";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpDivide';
+      type: "OpEQ";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'OpAnd';
+      type: "OpDivide";
       left: Ast;
       right: Ast;
     }
   | {
-      type: 'Negative';
+      type: "OpAnd";
+      left: Ast;
+      right: Ast;
+    }
+  | {
+      type: "Negative";
       value: Ast;
     }
   | {
-      type: 'NumberLiteral';
+      type: "NumberLiteral";
       value: number;
     }
   | {
-      type: 'NullLiteral';
+      type: "NullLiteral";
     }
   | {
-      type: 'MethodReference';
+      type: "MethodReference";
       nullSafeNavigation: boolean;
       methodName: string;
       args: Ast[];
     }
   | {
-      type: 'FunctionReference';
+      type: "FunctionReference";
       nullSafeNavigation: boolean;
       functionName: string;
       args: Ast[];
     }
   | {
-      type: 'InlineMap';
+      type: "InlineMap";
       elements: {
         [elem: string]: Ast;
       };
     }
   | {
-      type: 'InlineList';
+      type: "InlineList";
       elements: Ast[];
     }
   | {
-      type: 'Indexer';
+      type: "Indexer";
       nullSafeNavigation: boolean;
       index: Ast;
     }
   | {
-      type: 'Elvis';
+      type: "Elvis";
       expression: Ast;
       ifFalse: Ast;
     }
   | {
       // Represents a dot-separated expression sequence, such as 'property1.property2.methodOne()'
-      type: 'CompoundExpression';
+      type: "CompoundExpression";
       expressionComponents: Ast[];
     }
   | {
-      type: 'BooleanLiteral';
+      type: "BooleanLiteral";
       value: boolean;
     };
