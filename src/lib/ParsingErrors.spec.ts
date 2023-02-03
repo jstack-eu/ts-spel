@@ -104,20 +104,20 @@ it('"f', () => {
 
 it("{", () => {
   const input = "{";
-  const expectedError = new ParsingError(input, 1, "Unclosed {");
+  const expectedError = new ParsingError(input, 1, "Expected }");
   assertError(input, expectedError);
 });
 
 it("{1", () => {
   const input = "{1";
-  const expectedError = new ParsingError(input, 1, "Unclosed {");
+  const expectedError = new ParsingError(input, 1, "Expected }");
   assertError(input, expectedError);
 });
 
 // fixme
 it("(", () => {
   const input = "(";
-  const expectedError = new ParsingError(input, 1, "Unclosed Paren");
+  const expectedError = new ParsingError(input, 1, "Expected )");
   assertError(input, expectedError);
 });
 
@@ -127,15 +127,21 @@ it("()", () => {
   assertError(input, expectedError);
 });
 
+it("(a  (b))", () => {
+  const input = "(a  (b))";
+  const expectedError = new ParsingError(input, 2, "Expected )");
+  assertError(input, expectedError);
+});
+
 it("{1,", () => {
   const input = "{1,";
-  const expectedError = new ParsingError(input, 1, "Unclosed {");
+  const expectedError = new ParsingError(input, 1, "Expected }");
   assertError(input, expectedError);
 });
 
 it("{1,2", () => {
   const input = "{1,2";
-  const expectedError = new ParsingError(input, 1, "Unclosed {");
+  const expectedError = new ParsingError(input, 1, "Expected }");
   assertError(input, expectedError);
 });
 
@@ -144,7 +150,7 @@ it("foo.![", () => {
   const expectedError = new ParsingError(
     input,
     6,
-    "Unclosed Projection Expression !["
+    "Expected ] for Projection expression !["
   );
   assertError(input, expectedError);
 });
@@ -154,7 +160,7 @@ it("foo.?[", () => {
   const expectedError = new ParsingError(
     input,
     6,
-    "Unclosed Selection Expression ?["
+    "Expected ] for selection expression ?["
   );
   assertError(input, expectedError);
 });
@@ -164,7 +170,7 @@ it("foo.^[", () => {
   const expectedError = new ParsingError(
     input,
     6,
-    "Unclosed SelectionFirst Expression ^["
+    "Expected ] for selection expression ^["
   );
   assertError(input, expectedError);
 });
@@ -174,38 +180,46 @@ it("foo.$[", () => {
   const expectedError = new ParsingError(
     input,
     6,
-    "Unclosed SelectionLast Expression $["
+    "Expected ] for selection expression $["
   );
   assertError(input, expectedError);
 });
 
 it("foo[", () => {
   const input = "foo[";
-  const expectedError = new ParsingError(input, 4, "Unclosed [");
+  const expectedError = new ParsingError(input, 4, "Expected ]");
   assertError(input, expectedError);
 });
 
 it("foo[bar", () => {
   const input = "foo[bar";
-  const expectedError = new ParsingError(input, 7, "Unclosed [");
+  const expectedError = new ParsingError(input, 7, "Expected ]");
   assertError(input, expectedError);
 });
 
 it("foo?[", () => {
   const input = "foo?[";
-  const expectedError = new ParsingError(input, 5, "Unclosed [");
+  const expectedError = new ParsingError(input, 5, "Expected ]");
   assertError(input, expectedError);
 });
 
 it("func(", () => {
   const input = "func(";
-  const expectedError = new ParsingError(input, 5, "Unclosed method call");
+  const expectedError = new ParsingError(
+    input,
+    5,
+    "Expected ) for method call"
+  );
   assertError(input, expectedError);
 });
 
 it("#func(", () => {
   const input = "#func(";
-  const expectedError = new ParsingError(input, 6, "Unclosed function call");
+  const expectedError = new ParsingError(
+    input,
+    6,
+    "Expected ) for function call"
+  );
   assertError(input, expectedError);
 });
 
@@ -268,12 +282,12 @@ it("foo[  ]", () => {
 
 it("foo[", () => {
   const input = "foo[";
-  const expectedError = new ParsingError(input, 4, "Unclosed [");
+  const expectedError = new ParsingError(input, 4, "Expected ]");
   assertError(input, expectedError);
 });
 
 it("foo[1", () => {
   const input = "foo[1";
-  const expectedError = new ParsingError(input, 5, "Unclosed [");
+  const expectedError = new ParsingError(input, 5, "Expected ]");
   assertError(input, expectedError);
 });

@@ -6,13 +6,13 @@ export class ParsingError extends CustomError {
     public expression: string,
     public index: number,
     public reason:
-      | "Unclosed Paren"
+      | "Expected )"
       | "Expected expression in ()"
       | "Expression Remaining"
       | "Generic"
       | "Expected expression after elvis (?:)"
-      | "Unclosed function call"
-      | "Unclosed method call"
+      | "Expected ) for function call"
+      | "Expected ) for method call"
       | "No right operand for &&"
       | "No right operand for ||"
       | "No right operand for >="
@@ -46,12 +46,12 @@ export class ParsingError extends CustomError {
       | "Missing Character &"
       | "Missing Character |"
       | "Non-terminating quoted string"
-      | "Unclosed {"
-      | "Unclosed ["
-      | "Unclosed Selection Expression ?["
-      | "Unclosed SelectionFirst Expression ^["
-      | "Unclosed SelectionLast Expression $["
-      | "Unclosed Projection Expression ![",
+      | "Expected }"
+      | "Expected ]"
+      | "Expected ] for selection expression ?["
+      | "Expected ] for selection expression ^["
+      | "Expected ] for selection expression $["
+      | "Expected ] for Projection expression ![",
     message: string = reason,
     cause?: Error
   ) {

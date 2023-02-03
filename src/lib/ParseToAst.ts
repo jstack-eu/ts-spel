@@ -3,7 +3,7 @@ import { ParsingError } from "./CustomErrors";
 import _stringLiteral from "./stringLiteralSPELStyle";
 
 // turn true for debugging.
-const logFlag = false;
+const logFlag = true;
 
 /**
  * Produces an AST representing the input SPEL expression
@@ -557,13 +557,13 @@ export const parse = function (input: string): Ast {
             index: innerExpression,
           };
         }
-        throw new ParsingError(input, index, "Unclosed [");
+        throw new ParsingError(input, index, "Expected ]");
       } else {
         if (utils.char("]")) {
           index -= 1;
           throw new ParsingError(input, index, "Expression expected in []");
         }
-        throw new ParsingError(input, index, "Unclosed [");
+        throw new ParsingError(input, index, "Expected ]");
       }
     } else {
       index = backtrack;
@@ -583,13 +583,13 @@ export const parse = function (input: string): Ast {
             index: innerExpression,
           };
         }
-        throw new ParsingError(input, index, "Unclosed [");
+        throw new ParsingError(input, index, "Expected ]");
       } else {
         if (utils.char("]")) {
           index -= 1;
           throw new ParsingError(input, index, "Expression expected in []");
         }
-        throw new ParsingError(input, index, "Unclosed [");
+        throw new ParsingError(input, index, "Expected ]");
       }
     } else {
       index = backtrack;
@@ -623,7 +623,7 @@ export const parse = function (input: string): Ast {
             args,
           };
         } else {
-          throw new ParsingError(input, index, "Unclosed method call");
+          throw new ParsingError(input, index, "Expected ) for method call");
         }
       } else {
         index = fnbacktrack;
@@ -663,7 +663,7 @@ export const parse = function (input: string): Ast {
             args,
           };
         } else {
-          throw new ParsingError(input, index, "Unclosed function call");
+          throw new ParsingError(input, index, "Expected ) for function call");
         }
       } else {
         index = fnbacktrack;
@@ -717,7 +717,7 @@ export const parse = function (input: string): Ast {
             throw new ParsingError(
               input,
               index,
-              "Unclosed Selection Expression ?["
+              "Expected ] for selection expression ?["
             );
           }
         }
@@ -736,7 +736,7 @@ export const parse = function (input: string): Ast {
             throw new ParsingError(
               input,
               index,
-              "Unclosed SelectionFirst Expression ^["
+              "Expected ] for selection expression ^["
             );
           }
         }
@@ -755,7 +755,7 @@ export const parse = function (input: string): Ast {
             throw new ParsingError(
               input,
               index,
-              "Unclosed SelectionLast Expression $["
+              "Expected ] for selection expression $["
             );
           }
         }
@@ -801,7 +801,7 @@ export const parse = function (input: string): Ast {
         throw new ParsingError(
           input,
           index,
-          "Unclosed Projection Expression !["
+          "Expected ] for Projection expression !["
         );
       }
     } else {
@@ -848,13 +848,13 @@ export const parse = function (input: string): Ast {
         if (utils.char(")")) {
           return exp;
         }
-        throw new ParsingError(input, index, "Unclosed Paren");
+        throw new ParsingError(input, index, "Expected )");
       }
       if (utils.char(")")) {
         index -= 1;
         throw new ParsingError(input, index, "Expected expression in ()");
       }
-      throw new ParsingError(input, index, "Unclosed Paren");
+      throw new ParsingError(input, index, "Expected )");
     }
     return null;
   };
@@ -916,7 +916,7 @@ export const parse = function (input: string): Ast {
       } else {
         index = fnbacktrack;
       }
-      throw new ParsingError(input, index, "Unclosed {");
+      throw new ParsingError(input, index, "Expected }");
     }
     return null;
   };
