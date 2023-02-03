@@ -5,15 +5,16 @@
 const Q = {
   SINGLE_QUOTE: "'",
   DOUBLE_QUOTE: '"',
-  TICK_QUOTE: '`',
+  TICK_QUOTE: "`",
 };
 const isQuoteChar = (ch: string) => Object.values(Q).includes(ch);
 
 // returnValue[1] is the index remaining after a successful string match
-const stringLiteral = (input: string): [string, number] | null => {
+// -1 means unclosed string error
+const stringLiteral = (input: string): [string, number] | -1 | null => {
   const getMaybeQuoteChar = (
     ix: number,
-    matchingChar?: typeof Q[keyof typeof Q]
+    matchingChar?: (typeof Q)[keyof typeof Q]
   ): null | {
     char: string;
     length: number; // number of times it is repeated
@@ -36,7 +37,7 @@ const stringLiteral = (input: string): [string, number] | null => {
   };
   const firstNonWhitespaceCharacterIx = (() => {
     let i = 0;
-    while (input[i]?.trim() === '') {
+    while (input[i]?.trim() === "") {
       i += 1;
     }
     return i;
@@ -70,6 +71,7 @@ const stringLiteral = (input: string): [string, number] | null => {
         i = maybeClosingQuoteChar.continueIx + 1;
       }
     }
+    return -1;
   }
   return null;
 };

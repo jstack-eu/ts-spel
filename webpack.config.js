@@ -1,18 +1,18 @@
-const path = require('path'); // eslint-disable-line
-const webpack = require('webpack');
+const path = require("path"); // eslint-disable-line
+const webpack = require("webpack");
 module.exports = {
-  mode: 'production',
+  mode: "production",
   entry: {
-    'ts-spel': './src/index.ts',
-    'ts-spel.min': './src/index.ts',
+    "ts-spel": "./src/index.ts",
+    "ts-spel.min": "./src/index.ts",
   },
   output: {
-    path: path.resolve(__dirname, 'build/main'),
-    filename: '[name].js',
-    libraryTarget: 'umd',
-    library: 'TsSpel',
+    path: path.resolve(__dirname, "_bundles"),
+    filename: "[name].js",
+    libraryTarget: "umd",
+    library: "TsSpel",
     umdNamedDefine: true,
-    globalObject: 'this',
+    globalObject: "this",
   },
   plugins: [
     new webpack.DefinePlugin({
@@ -21,21 +21,21 @@ module.exports = {
   ],
 
   resolveLoader: {
-    modules: [path.join(__dirname, 'node_modules')],
+    modules: [path.join(__dirname, "node_modules")],
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js', '.jsx'],
-    modules: [path.join(__dirname, 'node_modules')],
+    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    modules: [path.join(__dirname, "node_modules")],
   },
 
   // Source maps support ('inline-source-map' also works)
-  devtool: 'source-map',
+  devtool: "source-map",
   // Add the loader for .ts files.
   module: {
     rules: [
       {
         test: /\.tsx?$/,
-        loader: 'ts-loader',
+        loader: "ts-loader",
       },
     ],
   },

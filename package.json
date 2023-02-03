@@ -1,6 +1,6 @@
 {
   "name": "ts-spel",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "spel parser evaluator",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -9,12 +9,14 @@
   "keywords": [],
   "scripts": {
     "test": "node node_modules/jest/bin/jest",
-    "clean": "shx rm -rf _bundles lib lib-esm",
+    "clean": "shx rm -rf _bundles lib lib-esm build",
     "build": "yarn run clean && tsc && tsc -m es6 --outDir lib-esm && webpack",
     "prepack": "yarn build",
     "prettier": "prettier --write '**/*.{ts,js,tsx,jsx}'"
   },
-  "dependencies": {},
+  "dependencies": {
+    "ts-custom-error": "^3.3.1"
+  },
   "devDependencies": {
     "@babel/preset-env": "^7.16.4",
     "@types/jest": "^29.4.0",

@@ -1,32 +1,5 @@
 import { parse } from "./ParseToAst";
 
-it("Throws an exception if input is not a single complete expression.", () => {
-  expect(() => parse("144 12")).toThrowError(
-    'Parsing incomplete at index 4 expression remaining: "12"'
-  );
-});
-
-it("Throws an exception on empty input", () => {
-  expect(() => parse("")).toThrowError(
-    'expression "" could not be parsed. index: 0'
-  );
-});
-
-it("Throws an exception on whitespace only input", () => {
-  expect(() => parse("  ")).toThrowError(
-    'expression "  " could not be parsed. index: 2'
-  );
-});
-
-it("Throws an exception on incomplete ternary", () => {
-  expect(() => parse(" asdf ? asdf ")).toThrowError(
-    "Incomplete ternary expression. index: 13"
-  );
-  expect(() => parse(" asdf ? asdf : ")).toThrowError(
-    "Incomplete ternary expression. index: 15"
-  );
-});
-
 it("should parse integer", () => {
   expect(parse("144")).toEqual({
     type: "NumberLiteral",

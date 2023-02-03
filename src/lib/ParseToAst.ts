@@ -1,4 +1,5 @@
 import { Ast } from "./Ast";
+import { ParsingError } from "./CustomErrors";
 import _stringLiteral from "./stringLiteralSPELStyle";
 
 // turn true for debugging.
@@ -106,6 +107,9 @@ export const parse = function (input: string): Ast {
     },
     stringLiteral: function () {
       const match = _stringLiteral(input.slice(index));
+      if (match === -1) {
+        throw new ParsingError(input, index, "Non-terminating quoted string");
+      }
       if (match) {
         index = index + match[1];
         return match[0];
@@ -125,8 +129,10 @@ export const parse = function (input: string): Ast {
         const exp2 = expression();
         log("after expression eaten post elvis");
         if (!exp2) {
-          throw new Error(
-            "Expected expression after elvis operator (?:) index: " + index
+          throw new ParsingError(
+            input,
+            index,
+            "Expected expression after elvis (?:)"
           );
         }
         return {
@@ -145,7 +151,7 @@ export const parse = function (input: string): Ast {
             ifFalse: exp3,
           };
         } else {
-          throw new Error("Incomplete ternary expression. index: " + index);
+          throw new ParsingError(input, index, "Incomplete Ternary");
         }
       }
     } else {
@@ -161,17 +167,21 @@ export const parse = function (input: string): Ast {
     utils.zeroOrMore(() => {
       utils.whitSpc();
       let right: Ast | null;
-      if (
-        utils.char("|") &&
-        utils.char("|") &&
-        (right = logicalAndExpression())
-      ) {
-        left = {
-          type: "OpOr",
-          left,
-          right,
-        };
-        return left;
+      if (utils.char("|")) {
+        if (utils.char("|")) {
+          if ((right = logicalAndExpression())) {
+            left = {
+              type: "OpOr",
+              left,
+              right,
+            };
+            return left;
+          } else {
+            throw new ParsingError(input, index, "No right operand for ||");
+          }
+        } else {
+          throw new ParsingError(input, index, "Missing Character |");
+        }
       }
       return null;
     });
@@ -186,17 +196,21 @@ export const parse = function (input: string): Ast {
     utils.zeroOrMore(() => {
       utils.whitSpc();
       let right: Ast | null;
-      if (
-        utils.char("&") &&
-        utils.char("&") &&
-        (right = relationalExpression())
-      ) {
-        left = {
-          type: "OpAnd",
-          left,
-          right,
-        };
-        return left;
+      if (utils.char("&")) {
+        if (utils.char("&")) {
+          if ((right = relationalExpression())) {
+            left = {
+              type: "OpAnd",
+              left,
+              right,
+            };
+            return left;
+          } else {
+            throw new ParsingError(input, index, "No right operand for &&");
+          }
+        } else {
+          throw new ParsingError(input, index, "Missing Character &");
+        }
       }
       return null;
     });
@@ -222,7 +236,7 @@ export const parse = function (input: string): Ast {
             right,
           };
         } else {
-          throw new Error("no right operand for >= at index " + index);
+          throw new ParsingError(input, index, "No right operand for >=");
         }
       } else if ((right = sumExpression())) {
         return {
@@ -231,7 +245,7 @@ export const parse = function (input: string): Ast {
           right,
         };
       } else {
-        throw new Error("no right operand for > at index " + index);
+        throw new ParsingError(input, index, "No right operand for >");
       }
     } else if (utils.char("<")) {
       if (utils.char("=")) {
@@ -242,7 +256,7 @@ export const parse = function (input: string): Ast {
             right,
           };
         } else {
-          throw new Error("no right operand for <= at index " + index);
+          throw new ParsingError(input, index, "No right operand for <=");
         }
       } else if ((right = sumExpression())) {
         return {
@@ -251,7 +265,7 @@ export const parse = function (input: string): Ast {
           right,
         };
       } else {
-        throw new Error("no right operand for < at index " + index);
+        throw new ParsingError(input, index, "No right operand for <");
       }
     } else if (utils.char("!")) {
       if (utils.char("=")) {
@@ -262,7 +276,7 @@ export const parse = function (input: string): Ast {
             right,
           };
         } else {
-          throw new Error("no right operand for != at index " + index);
+          throw new ParsingError(input, index, "No right operand for !=");
         }
       } else {
         index = backtrack;
@@ -277,10 +291,10 @@ export const parse = function (input: string): Ast {
             right,
           };
         } else {
-          throw new Error("no right operand for == at index " + index);
+          throw new ParsingError(input, index, "No right operand for ==");
         }
       } else {
-        throw new Error("= is not an operator. index: " + index);
+        throw new ParsingError(input, index, "Assignment not allowed");
       }
     } else {
       let keyword = utils.identifier();
@@ -292,7 +306,11 @@ export const parse = function (input: string): Ast {
             right,
           };
         } else {
-          throw new Error("no right operand for 'matches' at index " + index);
+          throw new ParsingError(
+            input,
+            index,
+            "No right operand for 'matches'"
+          );
         }
       } else if (keyword === "between") {
         if ((right = sumExpression())) {
@@ -302,10 +320,19 @@ export const parse = function (input: string): Ast {
             right,
           };
         } else {
-          throw new Error("no right operand for 'between' at index " + index);
+          throw new ParsingError(
+            input,
+            index,
+            "No right operand for 'between'"
+          );
         }
       } else if (keyword) {
-        throw new Error(`"${keyword}" is not an operator. index: ${index}`);
+        throw new ParsingError(
+          input,
+          index,
+          "Not an Operator",
+          `"${keyword}" is not an operator`
+        );
       }
     }
     log("fell through");
@@ -356,29 +383,47 @@ export const parse = function (input: string): Ast {
     utils.zeroOrMore(() => {
       let right: Ast | null = null;
       if (utils.char("*")) {
+        if (!left) {
+          throw new ParsingError(input, index - 1, "No left operand for *");
+        }
         right = powerExpression();
-        left = {
-          type: "OpMultiply",
-          left,
-          right,
-        };
-        return left;
+        if (right) {
+          left = {
+            type: "OpMultiply",
+            left,
+            right,
+          };
+          return left;
+        }
+        throw new ParsingError(input, index, "No right operand for *");
       } else if (utils.char("/")) {
+        if (!left) {
+          throw new ParsingError(input, index - 1, "No left operand for /");
+        }
         right = powerExpression();
-        left = {
-          type: "OpDivide",
-          left,
-          right,
-        };
-        return left;
+        if (right) {
+          left = {
+            type: "OpDivide",
+            left,
+            right,
+          };
+          return left;
+        }
+        throw new ParsingError(input, index, "No right operand for /");
       } else if (utils.char("%")) {
+        if (!left) {
+          throw new ParsingError(input, index - 1, "No left operand for %");
+        }
         right = powerExpression();
-        left = {
-          type: "OpModulus",
-          left,
-          right,
-        };
-        return left;
+        if (right) {
+          left = {
+            type: "OpModulus",
+            left,
+            right,
+          };
+          return left;
+        }
+        throw new ParsingError(input, index, "No right operand for %");
       }
       return null;
     });
@@ -458,8 +503,7 @@ export const parse = function (input: string): Ast {
       literal,
       functionOrVar,
       () => methodOrProperty(false),
-      inlineList,
-      inlineMap
+      inlineListOrMap
     );
   };
   const node = function (): Ast | null {
@@ -485,6 +529,7 @@ export const parse = function (input: string): Ast {
     }
     return null;
   };
+
   const indexExp = function (): Ast | null {
     log("indexExp");
     return utils.firstOf(nullSafeIndex, notNullSafeIndex);
@@ -493,17 +538,16 @@ export const parse = function (input: string): Ast {
     log("nullSafeIndex");
     const backtrack = index;
     let innerExpression: Ast | null = null;
-    if (
-      utils.char("?") &&
-      utils.char("[") &&
-      (innerExpression = expression()) &&
-      utils.char("]")
-    ) {
-      return {
-        type: "Indexer",
-        nullSafeNavigation: true,
-        index: innerExpression,
-      };
+    if (utils.char("?") && utils.char("[")) {
+      if ((innerExpression = expression()) && utils.char("]")) {
+        return {
+          type: "Indexer",
+          nullSafeNavigation: true,
+          index: innerExpression,
+        };
+      } else {
+        throw new ParsingError(input, index, "Unclosed [");
+      }
     } else {
       index = backtrack;
     }
@@ -513,16 +557,16 @@ export const parse = function (input: string): Ast {
     log("notNullSafeIndex");
     const backtrack = index;
     let innerExpression: Ast | null = null;
-    if (
-      utils.char("[") &&
-      (innerExpression = expression()) &&
-      utils.char("]")
-    ) {
-      return {
-        type: "Indexer",
-        nullSafeNavigation: false,
-        index: innerExpression,
-      };
+    if (utils.char("[")) {
+      if ((innerExpression = expression()) && utils.char("]")) {
+        return {
+          type: "Indexer",
+          nullSafeNavigation: false,
+          index: innerExpression,
+        };
+      } else {
+        throw new ParsingError(input, index, "Unclosed [");
+      }
     } else {
       index = backtrack;
     }
@@ -535,25 +579,28 @@ export const parse = function (input: string): Ast {
     let ident: string | null = null;
     if ((ident = utils.identifier())) {
       const fnbacktrack = index;
-      if (
-        utils.char("(") &&
-        utils.zeroOrMore(() => {
-          const arg = expression();
-          if (arg) {
-            args.push(arg);
-            utils.char(",");
-            return arg;
-          }
-          return null;
-        }) &&
-        utils.char(")")
-      ) {
-        return {
-          type: "MethodReference",
-          nullSafeNavigation,
-          methodName: ident,
-          args,
-        };
+      if (utils.char("(")) {
+        if (
+          utils.zeroOrMore(() => {
+            const arg = expression();
+            if (arg) {
+              args.push(arg);
+              utils.char(",");
+              return arg;
+            }
+            return null;
+          }) &&
+          utils.char(")")
+        ) {
+          return {
+            type: "MethodReference",
+            nullSafeNavigation,
+            methodName: ident,
+            args,
+          };
+        } else {
+          throw new ParsingError(input, index, "Unclosed method call");
+        }
       } else {
         index = fnbacktrack;
         return {
@@ -572,25 +619,28 @@ export const parse = function (input: string): Ast {
     let ident: string | null = null;
     if (utils.char("#") && (ident = utils.identifier())) {
       const fnbacktrack = index;
-      if (
-        utils.char("(") &&
-        utils.zeroOrMore(() => {
-          const arg = expression();
-          if (arg) {
-            args.push(arg);
-            utils.char(",");
-            return arg;
-          }
-          return null;
-        }) &&
-        utils.char(")")
-      ) {
-        return {
-          type: "FunctionReference",
-          nullSafeNavigation: false,
-          functionName: ident,
-          args,
-        };
+      if (utils.char("(")) {
+        if (
+          utils.zeroOrMore(() => {
+            const arg = expression();
+            if (arg) {
+              args.push(arg);
+              utils.char(",");
+              return arg;
+            }
+            return null;
+          }) &&
+          utils.char(")")
+        ) {
+          return {
+            type: "FunctionReference",
+            nullSafeNavigation: false,
+            functionName: ident,
+            args,
+          };
+        } else {
+          throw new ParsingError(input, index, "Unclosed function call");
+        }
       } else {
         index = fnbacktrack;
         return {
@@ -627,51 +677,63 @@ export const parse = function (input: string): Ast {
     const result = utils.firstOf(
       () => {
         let exp: Ast | null;
-        if (
-          utils.char("?") &&
-          utils.char("[") &&
-          utils.whitSpc() &&
-          (exp = expression()) &&
-          utils.whitSpc() &&
-          utils.char("]")
-        ) {
-          return {
-            type: "SelectionAll",
-            nullSafeNavigation,
-            expression: exp,
-          };
+        if (utils.char("?") && utils.char("[")) {
+          if (
+            utils.whitSpc() &&
+            (exp = expression()) &&
+            utils.whitSpc() &&
+            utils.char("]")
+          ) {
+            return {
+              type: "SelectionAll",
+              nullSafeNavigation,
+              expression: exp,
+            };
+          } else {
+            throw new ParsingError(
+              input,
+              index,
+              "Unclosed Selection Expression ?["
+            );
+          }
         }
         return null;
       },
       () => {
         let exp: Ast | null;
-        if (
-          utils.char("^") &&
-          utils.char("[") &&
-          (exp = expression()) &&
-          utils.char("]")
-        ) {
-          return {
-            type: "SelectionFirst",
-            nullSafeNavigation,
-            expression: exp,
-          };
+        if (utils.char("^") && utils.char("[")) {
+          if ((exp = expression()) && utils.char("]")) {
+            return {
+              type: "SelectionFirst",
+              nullSafeNavigation,
+              expression: exp,
+            };
+          } else {
+            throw new ParsingError(
+              input,
+              index,
+              "Unclosed SelectionFirst Expression ^["
+            );
+          }
         }
         return null;
       },
       () => {
         let exp: Ast | null;
-        if (
-          utils.char("$") &&
-          utils.char("[") &&
-          (exp = expression()) &&
-          utils.char("]")
-        ) {
-          return {
-            type: "SelectionLast",
-            nullSafeNavigation,
-            expression: exp,
-          };
+        if (utils.char("$") && utils.char("[")) {
+          if ((exp = expression()) && utils.char("]")) {
+            return {
+              type: "SelectionLast",
+              nullSafeNavigation,
+              expression: exp,
+            };
+          } else {
+            throw new ParsingError(
+              input,
+              index,
+              "Unclosed SelectionLast Expression $["
+            );
+          }
         }
         return null;
       }
@@ -704,17 +766,20 @@ export const parse = function (input: string): Ast {
       return null;
     }
     let exp: Ast | null;
-    if (
-      utils.char("!") &&
-      utils.char("[") &&
-      (exp = expression()) &&
-      utils.char("]")
-    ) {
-      return {
-        type: "Projection",
-        nullSafeNavigation,
-        expression: exp,
-      };
+    if (utils.char("!") && utils.char("[")) {
+      if ((exp = expression()) && utils.char("]")) {
+        return {
+          type: "Projection",
+          nullSafeNavigation,
+          expression: exp,
+        };
+      } else {
+        throw new ParsingError(
+          input,
+          index,
+          "Unclosed Projection Expression !["
+        );
+      }
     } else {
       index = backtrack;
     }
@@ -758,21 +823,26 @@ export const parse = function (input: string): Ast {
       if ((exp = expression()) && utils.char(")")) {
         return exp;
       }
-      throw new Error("incomplete paren expression. i: " + index);
+      throw new ParsingError(input, index, "Unclosed Paren");
     }
     return null;
   };
-  const inlineList = function (): Ast | null {
-    log("inlineList");
+
+  const inlineListOrMap = function (): Ast | null {
+    log("inlineListOrMap");
+    const listElements: Ast[] = [];
+    const dict: {
+      [key: string]: Ast;
+    } = {};
     utils.whitSpc();
-    const elements: Ast[] = [];
     if (utils.char("{")) {
       const fnbacktrack = index;
+      // look for comma seperated list items
       if (
         utils.zeroOrMore(() => {
           const elem = expression();
           if (elem) {
-            elements.push(elem);
+            listElements.push(elem);
             utils.char(",");
             utils.whitSpc();
             return elem;
@@ -783,22 +853,12 @@ export const parse = function (input: string): Ast {
       ) {
         return {
           type: "InlineList",
-          elements,
+          elements: listElements,
         };
       } else {
         index = fnbacktrack;
       }
-    }
-    return null;
-  };
-  const inlineMap = function (): Ast | null {
-    log("inlineMap");
-    utils.whitSpc();
-    const dict: {
-      [key: string]: Ast;
-    } = {};
-    if (utils.char("{")) {
-      const fnbacktrack = index;
+      // look for dictionary key/value pairs
       if (
         utils.zeroOrMore(() => {
           utils.whitSpc();
@@ -825,6 +885,7 @@ export const parse = function (input: string): Ast {
       } else {
         index = fnbacktrack;
       }
+      throw new ParsingError(input, index, "Unclosed {");
     }
     return null;
   };
@@ -843,21 +904,11 @@ export const parse = function (input: string): Ast {
   };
 
   const result = expression();
-  if (input.trim().length - 1 > index) {
-    throw new Error(
-      "Parsing incomplete at index " +
-        index +
-        " expression remaining: " +
-        JSON.stringify(input.slice(index))
-    );
+  if (index !== input.length) {
+    throw new ParsingError(input, index, "Expression Remaining");
   }
   if (result === null) {
-    throw new Error(
-      "expression " +
-        JSON.stringify(input) +
-        " could not be parsed. index: " +
-        index
-    );
+    throw new ParsingError(input, index, "Generic");
   }
   return result;
 };

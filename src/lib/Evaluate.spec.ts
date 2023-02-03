@@ -6,7 +6,9 @@ describe("Evaluation", () => {
     const r = parse("foo");
     expect(getEvaluator({ foo: false }, {})(r)).toBe(false);
   });
-
+  it("Can chain operators of equal precedence", () => {
+    expect(getEvaluator({}, {})(parse("2 * 2 * 2 * 2"))).toBe(16);
+  });
   it("should evaluate multiplication with higher precedence", () => {
     expect(getEvaluator({}, {})(parse("1+2*3"))).toBe(7);
   });

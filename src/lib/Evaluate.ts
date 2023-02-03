@@ -1,4 +1,5 @@
 import { Ast } from "./Ast";
+import { UnexpectedError } from "./CustomErrors";
 
 type Some<R = unknown> = {
   _tag: "some";
@@ -43,7 +44,7 @@ export const getEvaluator = (
     if (stack.length > 0) {
       return stack[stack.length - 1];
     }
-    throw new Error("Stack is empty.");
+    throw new UnexpectedError("Stack is empty");
   };
   const getValueInProvidedFuncsAndVars = (variableName: string): Maybe => {
     if (variableName === "this") {
