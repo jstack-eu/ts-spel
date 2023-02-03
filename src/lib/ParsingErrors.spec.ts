@@ -114,6 +114,19 @@ it("{1", () => {
   assertError(input, expectedError);
 });
 
+// fixme
+it("(", () => {
+  const input = "(";
+  const expectedError = new ParsingError(input, 1, "Unclosed Paren");
+  assertError(input, expectedError);
+});
+
+it("()", () => {
+  const input = "()";
+  const expectedError = new ParsingError(input, 1, "Expected expression in ()");
+  assertError(input, expectedError);
+});
+
 it("{1,", () => {
   const input = "{1,";
   const expectedError = new ParsingError(input, 1, "Unclosed {");

@@ -7,6 +7,7 @@ export class ParsingError extends CustomError {
     public index: number,
     public reason:
       | "Unclosed Paren"
+      | "Expected expression in ()"
       | "Expression Remaining"
       | "Generic"
       | "Expected expression after elvis (?:)"

@@ -844,8 +844,15 @@ export const parse = function (input: string): Ast {
     log("parenExpression");
     let exp: Ast | null;
     if (utils.char("(")) {
-      if ((exp = expression()) && utils.char(")")) {
-        return exp;
+      if ((exp = expression())) {
+        if (utils.char(")")) {
+          return exp;
+        }
+        throw new ParsingError(input, index, "Unclosed Paren");
+      }
+      if (utils.char(")")) {
+        index -= 1;
+        throw new ParsingError(input, index, "Expected expression in ()");
       }
       throw new ParsingError(input, index, "Unclosed Paren");
     }
