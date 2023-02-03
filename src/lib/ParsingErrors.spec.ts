@@ -234,3 +234,33 @@ it("a ? b :", () => {
   const expectedError = new ParsingError(input, 7, "Incomplete Ternary");
   assertError(input, expectedError);
 });
+
+it("foo.", () => {
+  const input = "foo.";
+  const expectedError = new ParsingError(input, 4, "Expected property after .");
+  assertError(input, expectedError);
+});
+
+it("foo[]", () => {
+  const input = "foo[]";
+  const expectedError = new ParsingError(input, 4, "Expression expected in []");
+  assertError(input, expectedError);
+});
+
+it("foo[  ]", () => {
+  const input = "foo[  ]";
+  const expectedError = new ParsingError(input, 6, "Expression expected in []");
+  assertError(input, expectedError);
+});
+
+it("foo[", () => {
+  const input = "foo[";
+  const expectedError = new ParsingError(input, 4, "Unclosed [");
+  assertError(input, expectedError);
+});
+
+it("foo[1", () => {
+  const input = "foo[1";
+  const expectedError = new ParsingError(input, 5, "Unclosed [");
+  assertError(input, expectedError);
+});

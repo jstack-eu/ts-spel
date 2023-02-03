@@ -519,11 +519,21 @@ export const parse = function (input: string): Ast {
   const navProperty = function (): Ast | null {
     log("navProperty");
     if (utils.char(".")) {
-      return methodOrProperty(false);
+      return (
+        methodOrProperty(false) ||
+        (() => {
+          throw new ParsingError(input, index, "Expected property after .");
+        })()
+      );
     }
     const backtrack = index;
     if (utils.char("?") && utils.char(".")) {
-      return methodOrProperty(true);
+      return (
+        methodOrProperty(true) ||
+        (() => {
+          throw new ParsingError(input, index, "Expected property after ?.");
+        })()
+      );
     } else {
       index = backtrack;
     }
@@ -539,13 +549,20 @@ export const parse = function (input: string): Ast {
     const backtrack = index;
     let innerExpression: Ast | null = null;
     if (utils.char("?") && utils.char("[")) {
-      if ((innerExpression = expression()) && utils.char("]")) {
-        return {
-          type: "Indexer",
-          nullSafeNavigation: true,
-          index: innerExpression,
-        };
+      if ((innerExpression = expression())) {
+        if (utils.char("]")) {
+          return {
+            type: "Indexer",
+            nullSafeNavigation: true,
+            index: innerExpression,
+          };
+        }
+        throw new ParsingError(input, index, "Unclosed [");
       } else {
+        if (utils.char("]")) {
+          index -= 1;
+          throw new ParsingError(input, index, "Expression expected in []");
+        }
         throw new ParsingError(input, index, "Unclosed [");
       }
     } else {
@@ -558,13 +575,20 @@ export const parse = function (input: string): Ast {
     const backtrack = index;
     let innerExpression: Ast | null = null;
     if (utils.char("[")) {
-      if ((innerExpression = expression()) && utils.char("]")) {
-        return {
-          type: "Indexer",
-          nullSafeNavigation: false,
-          index: innerExpression,
-        };
+      if ((innerExpression = expression())) {
+        if (utils.char("]")) {
+          return {
+            type: "Indexer",
+            nullSafeNavigation: false,
+            index: innerExpression,
+          };
+        }
+        throw new ParsingError(input, index, "Unclosed [");
       } else {
+        if (utils.char("]")) {
+          index -= 1;
+          throw new ParsingError(input, index, "Expression expected in []");
+        }
         throw new ParsingError(input, index, "Unclosed [");
       }
     } else {
