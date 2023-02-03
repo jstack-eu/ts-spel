@@ -105,7 +105,7 @@ export const parse = function (input: string): Ast {
     identifier: function () {
       return utils.regExp(/^([a-zA-Z_$][a-zA-Z0-9_$]*)/);
     },
-    stringLiteral: function () {
+    stringLiteral: function (): string | null {
       const match = _stringLiteral(input.slice(index));
       if (match === -1) {
         throw new ParsingError(input, index, "Non-terminating quoted string");
@@ -790,7 +790,7 @@ export const parse = function (input: string): Ast {
     return utils.firstOf(
       () => {
         const stringLiteral = utils.stringLiteral();
-        if (stringLiteral) {
+        if (typeof stringLiteral === "string") {
           log("returning stringLiteral", stringLiteral);
           return {
             type: "StringLiteral",

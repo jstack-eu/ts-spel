@@ -1,11 +1,19 @@
 import { parse } from "./ParseToAst";
 
+it("should parse empty string", () => {
+  expect(parse('""')).toEqual({
+    type: "StringLiteral",
+    value: "",
+  });
+});
+
 it("should parse integer", () => {
   expect(parse("144")).toEqual({
     type: "NumberLiteral",
     value: 144,
   });
 });
+
 it("should parse float", () => {
   expect(parse("1.618")).toEqual({
     type: "NumberLiteral",
@@ -163,6 +171,19 @@ it("Inline Lists", () => {
       {
         type: "NumberLiteral",
         value: 4,
+      },
+    ],
+  });
+  expect(parse("{'a', 'b'}")).toEqual({
+    type: "InlineList",
+    elements: [
+      {
+        type: "StringLiteral",
+        value: "a",
+      },
+      {
+        type: "StringLiteral",
+        value: "b",
       },
     ],
   });

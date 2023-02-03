@@ -1,5 +1,10 @@
 import stringLiteral from "./stringLiteralSPELStyle";
 
+it("should match double-quoted empty string", () => {
+  const input = '""';
+  expect(stringLiteral(input)).toEqual(["", 2]);
+});
+
 it("should match double-quoted string", () => {
   const input = '  "hello"  ';
   expect(stringLiteral(input)).toEqual(["hello", 9]);
