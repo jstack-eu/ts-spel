@@ -3,7 +3,7 @@ import { ParsingError } from "./CustomErrors";
 import _stringLiteral from "./stringLiteralSPELStyle";
 
 // turn true for debugging.
-const logFlag = true;
+const logFlag = false;
 
 /**
  * Produces an AST representing the input SPEL expression
@@ -23,10 +23,13 @@ const logFlag = true;
  * ```
  *
  * @param input - SPEL expression
+ * @param graceful - if true, will not error if the expression is incomplete -
+ *  to be used for autocompletion
+ *  (where we need an AST built to the current position to figure out the context of the current cursor position)
  * @returns AST representing input
  */
 
-export const parse = function (input: string): Ast {
+export const parse = function (input: string, graceful = false): Ast {
   let index = 0;
 
   const log = (...args) => {
@@ -128,7 +131,7 @@ export const parse = function (input: string): Ast {
         log("after elvis operator");
         const exp2 = expression();
         log("after expression eaten post elvis");
-        if (!exp2) {
+        if (!exp2 && !graceful) {
           throw new ParsingError(
             input,
             index,
@@ -143,7 +146,10 @@ export const parse = function (input: string): Ast {
       } else {
         let exp2: Ast | null = null;
         let exp3: Ast | null = null;
-        if ((exp2 = expression()) && utils.char(":") && (exp3 = expression())) {
+        if (
+          ((exp2 = expression()) && utils.char(":") && (exp3 = expression())) ||
+          graceful
+        ) {
           return {
             type: "Ternary",
             expression: exp1,
@@ -169,7 +175,7 @@ export const parse = function (input: string): Ast {
       let right: Ast | null;
       if (utils.char("|")) {
         if (utils.char("|")) {
-          if ((right = logicalAndExpression())) {
+          if ((right = logicalAndExpression()) || graceful) {
             left = {
               type: "OpOr",
               left,
@@ -198,7 +204,7 @@ export const parse = function (input: string): Ast {
       let right: Ast | null;
       if (utils.char("&")) {
         if (utils.char("&")) {
-          if ((right = relationalExpression())) {
+          if ((right = relationalExpression()) || graceful) {
             left = {
               type: "OpAnd",
               left,
@@ -229,7 +235,7 @@ export const parse = function (input: string): Ast {
     utils.whitSpc();
     if (utils.char(">")) {
       if (utils.char("=")) {
-        if ((right = sumExpression())) {
+        if ((right = sumExpression()) || graceful) {
           return {
             type: "OpGE",
             left,
@@ -238,7 +244,7 @@ export const parse = function (input: string): Ast {
         } else {
           throw new ParsingError(input, index, "No right operand for >=");
         }
-      } else if ((right = sumExpression())) {
+      } else if ((right = sumExpression()) || graceful) {
         return {
           type: "OpGT",
           left,
@@ -249,7 +255,7 @@ export const parse = function (input: string): Ast {
       }
     } else if (utils.char("<")) {
       if (utils.char("=")) {
-        if ((right = sumExpression())) {
+        if ((right = sumExpression()) || graceful) {
           return {
             type: "OpLE",
             left,
@@ -258,7 +264,7 @@ export const parse = function (input: string): Ast {
         } else {
           throw new ParsingError(input, index, "No right operand for <=");
         }
-      } else if ((right = sumExpression())) {
+      } else if ((right = sumExpression()) || graceful) {
         return {
           type: "OpLT",
           left,
@@ -269,7 +275,7 @@ export const parse = function (input: string): Ast {
       }
     } else if (utils.char("!")) {
       if (utils.char("=")) {
-        if ((right = sumExpression())) {
+        if ((right = sumExpression()) || graceful) {
           return {
             type: "OpNE",
             left,
@@ -284,7 +290,7 @@ export const parse = function (input: string): Ast {
     } else if (utils.char("=")) {
       log("got =");
       if (utils.char("=")) {
-        if ((right = sumExpression())) {
+        if ((right = sumExpression()) || graceful) {
           return {
             type: "OpEQ",
             left,
@@ -299,7 +305,7 @@ export const parse = function (input: string): Ast {
     } else {
       let keyword = utils.identifier();
       if (keyword === "matches") {
-        if ((right = sumExpression())) {
+        if ((right = sumExpression()) || graceful) {
           return {
             type: "OpMatches",
             left,
@@ -313,7 +319,7 @@ export const parse = function (input: string): Ast {
           );
         }
       } else if (keyword === "between") {
-        if ((right = sumExpression())) {
+        if ((right = sumExpression()) || graceful) {
           return {
             type: "OpBetween",
             left,
@@ -352,6 +358,9 @@ export const parse = function (input: string): Ast {
       if (utils.char("+")) {
         log("pluscase");
         right = productExpression();
+        if (!right && !graceful) {
+          throw new ParsingError(input, index, "No right operand for +");
+        }
         left = {
           type: "OpPlus",
           left,
@@ -361,6 +370,9 @@ export const parse = function (input: string): Ast {
       } else if (utils.char("-")) {
         log("minuscase");
         right = productExpression();
+        if (!right && !graceful) {
+          throw new ParsingError(input, index, "No right operand for -");
+        }
         left = {
           type: "OpMinus",
           left,
@@ -387,7 +399,7 @@ export const parse = function (input: string): Ast {
           throw new ParsingError(input, index - 1, "No left operand for *");
         }
         right = powerExpression();
-        if (right) {
+        if (right || graceful) {
           left = {
             type: "OpMultiply",
             left,
@@ -401,7 +413,7 @@ export const parse = function (input: string): Ast {
           throw new ParsingError(input, index - 1, "No left operand for /");
         }
         right = powerExpression();
-        if (right) {
+        if (right || graceful) {
           left = {
             type: "OpDivide",
             left,
@@ -415,7 +427,7 @@ export const parse = function (input: string): Ast {
           throw new ParsingError(input, index - 1, "No left operand for %");
         }
         right = powerExpression();
-        if (right) {
+        if (right || graceful) {
           left = {
             type: "OpModulus",
             left,
@@ -466,7 +478,7 @@ export const parse = function (input: string): Ast {
   const not = function (): Ast | null {
     log("not");
     let operand: Ast | null = null;
-    if (utils.char("!") && (operand = unaryExpression())) {
+    if (utils.char("!") && ((operand = unaryExpression()) || graceful)) {
       return {
         type: "OpNot",
         expression: operand,
@@ -522,6 +534,13 @@ export const parse = function (input: string): Ast {
       return (
         methodOrProperty(false) ||
         (() => {
+          if (graceful) {
+            return {
+              type: "PropertyReference",
+              propertyName: "",
+              nullSafeNavigation: false,
+            };
+          }
           throw new ParsingError(input, index, "Expected property after .");
         })()
       );
@@ -531,6 +550,13 @@ export const parse = function (input: string): Ast {
       return (
         methodOrProperty(true) ||
         (() => {
+          if (graceful) {
+            return {
+              type: "PropertyReference",
+              propertyName: "",
+              nullSafeNavigation: true,
+            };
+          }
           throw new ParsingError(input, index, "Expected property after ?.");
         })()
       );
@@ -549,8 +575,8 @@ export const parse = function (input: string): Ast {
     const backtrack = index;
     let innerExpression: Ast | null = null;
     if (utils.char("?") && utils.char("[")) {
-      if ((innerExpression = expression())) {
-        if (utils.char("]")) {
+      if ((innerExpression = expression()) || graceful) {
+        if (utils.char("]") || graceful) {
           return {
             type: "Indexer",
             nullSafeNavigation: true,
@@ -575,8 +601,8 @@ export const parse = function (input: string): Ast {
     const backtrack = index;
     let innerExpression: Ast | null = null;
     if (utils.char("[")) {
-      if ((innerExpression = expression())) {
-        if (utils.char("]")) {
+      if ((innerExpression = expression()) || graceful) {
+        if (utils.char("]") || graceful) {
           return {
             type: "Indexer",
             nullSafeNavigation: false,
@@ -614,7 +640,7 @@ export const parse = function (input: string): Ast {
             }
             return null;
           }) &&
-          utils.char(")")
+          (utils.char(")") || graceful)
         ) {
           return {
             type: "MethodReference",
@@ -654,7 +680,7 @@ export const parse = function (input: string): Ast {
             }
             return null;
           }) &&
-          utils.char(")")
+          (utils.char(")") || graceful)
         ) {
           return {
             type: "FunctionReference",
@@ -703,10 +729,11 @@ export const parse = function (input: string): Ast {
         let exp: Ast | null;
         if (utils.char("?") && utils.char("[")) {
           if (
-            utils.whitSpc() &&
-            (exp = expression()) &&
-            utils.whitSpc() &&
-            utils.char("]")
+            (utils.whitSpc() &&
+              (exp = expression()) &&
+              utils.whitSpc() &&
+              utils.char("]")) ||
+            graceful
           ) {
             return {
               type: "SelectionAll",
@@ -726,7 +753,7 @@ export const parse = function (input: string): Ast {
       () => {
         let exp: Ast | null;
         if (utils.char("^") && utils.char("[")) {
-          if ((exp = expression()) && utils.char("]")) {
+          if (((exp = expression()) && utils.char("]")) || graceful) {
             return {
               type: "SelectionFirst",
               nullSafeNavigation,
@@ -745,7 +772,7 @@ export const parse = function (input: string): Ast {
       () => {
         let exp: Ast | null;
         if (utils.char("$") && utils.char("[")) {
-          if ((exp = expression()) && utils.char("]")) {
+          if (((exp = expression()) && utils.char("]")) || graceful) {
             return {
               type: "SelectionLast",
               nullSafeNavigation,
@@ -791,7 +818,7 @@ export const parse = function (input: string): Ast {
     }
     let exp: Ast | null;
     if (utils.char("!") && utils.char("[")) {
-      if ((exp = expression()) && utils.char("]")) {
+      if (((exp = expression()) && utils.char("]")) || graceful) {
         return {
           type: "Projection",
           nullSafeNavigation,
@@ -844,8 +871,8 @@ export const parse = function (input: string): Ast {
     log("parenExpression");
     let exp: Ast | null;
     if (utils.char("(")) {
-      if ((exp = expression())) {
-        if (utils.char(")")) {
+      if ((exp = expression()) || graceful) {
+        if (utils.char(")") || graceful) {
           return exp;
         }
         throw new ParsingError(input, index, "Expected )");
@@ -880,7 +907,7 @@ export const parse = function (input: string): Ast {
           }
           return null;
         }) &&
-        utils.char("}")
+        (utils.char("}") || graceful)
       ) {
         return {
           type: "InlineList",
@@ -935,10 +962,10 @@ export const parse = function (input: string): Ast {
   };
 
   const result = expression();
-  if (index !== input.length) {
+  if (index !== input.length && !graceful) {
     throw new ParsingError(input, index, "Expression Remaining");
   }
-  if (result === null) {
+  if (result === null && !graceful) {
     throw new ParsingError(input, index, "Generic");
   }
   return result;

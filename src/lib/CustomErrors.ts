@@ -24,6 +24,8 @@ export class ParsingError extends CustomError {
       | "No right operand for *"
       | "No right operand for /"
       | "No right operand for %"
+      | "No right operand for -"
+      | "No right operand for +"
       | "No right operand for 'matches'"
       | "No right operand for 'between'"
       | "No left operand for &&"

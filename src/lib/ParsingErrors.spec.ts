@@ -58,6 +58,12 @@ it("1 &", () => {
   assertError(input, expectedError);
 });
 
+it("1 -", () => {
+  const input = "1 -";
+  const expectedError = new ParsingError(input, 3, "No right operand for -");
+  assertError(input, expectedError);
+});
+
 it("1 &&", () => {
   const input = "1 &&";
   const expectedError = new ParsingError(input, 4, "No right operand for &&");
@@ -129,7 +135,7 @@ it("()", () => {
 
 it("(a  (b))", () => {
   const input = "(a  (b))";
-  const expectedError = new ParsingError(input, 2, "Expected )");
+  const expectedError = new ParsingError(input, 4, "Expected )");
   assertError(input, expectedError);
 });
 
