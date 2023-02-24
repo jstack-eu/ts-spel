@@ -17,16 +17,19 @@ export type Ast =
       type: "SelectionFirst";
       nullSafeNavigation: boolean;
       expression: Ast;
+      __unclosed?: true;
     }
   | {
       type: "SelectionLast";
       nullSafeNavigation: boolean;
       expression: Ast;
+      __unclosed?: true;
     }
   | {
       type: "SelectionAll";
       nullSafeNavigation: boolean;
       expression: Ast;
+      __unclosed?: true;
     }
   | {
       type: "PropertyReference";
@@ -37,6 +40,7 @@ export type Ast =
       type: "Projection";
       nullSafeNavigation: boolean;
       expression: Ast;
+      __unclosed?: true;
     }
   | {
       type: "OpPower";
@@ -138,27 +142,32 @@ export type Ast =
       nullSafeNavigation: boolean;
       methodName: string;
       args: Ast[];
+      __unclosed?: true;
     }
   | {
       type: "FunctionReference";
       nullSafeNavigation: boolean;
       functionName: string;
       args: Ast[];
+      __unclosed?: true;
     }
   | {
       type: "InlineMap";
       elements: {
         [elem: string]: Ast;
       };
+      __unclosed?: true;
     }
   | {
       type: "InlineList";
       elements: Ast[];
+      __unclosed?: true;
     }
   | {
       type: "Indexer";
       nullSafeNavigation: boolean;
       index: Ast;
+      __unclosed?: true;
     }
   | {
       type: "Elvis";

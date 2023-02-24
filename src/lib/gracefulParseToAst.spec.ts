@@ -50,6 +50,7 @@ it("should gracefully parse incomplete selection expression", () => {
       {
         type: "SelectionAll",
         nullSafeNavigation: false,
+        __unclosed: true,
         expression: {
           type: "CompoundExpression",
           expressionComponents: [

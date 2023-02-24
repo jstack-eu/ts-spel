@@ -576,11 +576,18 @@ export const parse = function (input: string, graceful = false): Ast {
     let innerExpression: Ast | null = null;
     if (utils.char("?") && utils.char("[")) {
       if ((innerExpression = expression()) || graceful) {
-        if (utils.char("]") || graceful) {
+        if (utils.char("]")) {
           return {
             type: "Indexer",
             nullSafeNavigation: true,
             index: innerExpression,
+          };
+        } else if (graceful) {
+          return {
+            type: "Indexer",
+            nullSafeNavigation: true,
+            index: innerExpression,
+            __unclosed: true,
           };
         }
         throw new ParsingError(input, index, "Expected ]");
@@ -639,18 +646,26 @@ export const parse = function (input: string, graceful = false): Ast {
               return arg;
             }
             return null;
-          }) &&
-          (utils.char(")") || graceful)
+          })
         ) {
-          return {
-            type: "MethodReference",
-            nullSafeNavigation,
-            methodName: ident,
-            args,
-          };
-        } else {
-          throw new ParsingError(input, index, "Expected ) for method call");
+          if (utils.char(")")) {
+            return {
+              type: "MethodReference",
+              nullSafeNavigation,
+              methodName: ident,
+              args,
+            };
+          } else if (graceful) {
+            return {
+              type: "MethodReference",
+              nullSafeNavigation,
+              methodName: ident,
+              args,
+              __unclosed: true,
+            };
+          }
         }
+        throw new ParsingError(input, index, "Expected ) for method call");
       } else {
         index = fnbacktrack;
         return {
@@ -679,18 +694,26 @@ export const parse = function (input: string, graceful = false): Ast {
               return arg;
             }
             return null;
-          }) &&
-          (utils.char(")") || graceful)
+          })
         ) {
-          return {
-            type: "FunctionReference",
-            nullSafeNavigation: false,
-            functionName: ident,
-            args,
-          };
-        } else {
-          throw new ParsingError(input, index, "Expected ) for function call");
+          if (utils.char(")")) {
+            return {
+              type: "FunctionReference",
+              nullSafeNavigation: false,
+              functionName: ident,
+              args,
+            };
+          } else if (graceful) {
+            return {
+              type: "FunctionReference",
+              nullSafeNavigation: false,
+              functionName: ident,
+              args,
+              __unclosed: true,
+            };
+          }
         }
+        throw new ParsingError(input, index, "Expected ) for function call");
       } else {
         index = fnbacktrack;
         return {
@@ -729,16 +752,22 @@ export const parse = function (input: string, graceful = false): Ast {
         let exp: Ast | null;
         if (utils.char("?") && utils.char("[")) {
           if (
-            (utils.whitSpc() &&
-              (exp = expression()) &&
-              utils.whitSpc() &&
-              utils.char("]")) ||
-            graceful
+            utils.whitSpc() &&
+            (exp = expression()) &&
+            utils.whitSpc() &&
+            utils.char("]")
           ) {
             return {
               type: "SelectionAll",
               nullSafeNavigation,
               expression: exp,
+            };
+          } else if (graceful) {
+            return {
+              type: "SelectionAll",
+              nullSafeNavigation,
+              expression: exp,
+              __unclosed: true,
             };
           } else {
             throw new ParsingError(
@@ -753,11 +782,18 @@ export const parse = function (input: string, graceful = false): Ast {
       () => {
         let exp: Ast | null;
         if (utils.char("^") && utils.char("[")) {
-          if (((exp = expression()) && utils.char("]")) || graceful) {
+          if ((exp = expression()) && utils.char("]")) {
             return {
               type: "SelectionFirst",
               nullSafeNavigation,
               expression: exp,
+            };
+          } else if (graceful) {
+            return {
+              type: "SelectionFirst",
+              nullSafeNavigation,
+              expression: exp,
+              __unclosed: true,
             };
           } else {
             throw new ParsingError(
@@ -772,11 +808,18 @@ export const parse = function (input: string, graceful = false): Ast {
       () => {
         let exp: Ast | null;
         if (utils.char("$") && utils.char("[")) {
-          if (((exp = expression()) && utils.char("]")) || graceful) {
+          if ((exp = expression()) && utils.char("]")) {
             return {
               type: "SelectionLast",
               nullSafeNavigation,
               expression: exp,
+            };
+          } else if (graceful) {
+            return {
+              type: "SelectionLast",
+              nullSafeNavigation,
+              expression: exp,
+              __unclosed: true,
             };
           } else {
             throw new ParsingError(
@@ -818,11 +861,18 @@ export const parse = function (input: string, graceful = false): Ast {
     }
     let exp: Ast | null;
     if (utils.char("!") && utils.char("[")) {
-      if (((exp = expression()) && utils.char("]")) || graceful) {
+      if ((exp = expression()) && utils.char("]")) {
         return {
           type: "Projection",
           nullSafeNavigation,
           expression: exp,
+        };
+      } else if (graceful) {
+        return {
+          type: "Projection",
+          nullSafeNavigation,
+          expression: exp,
+          __unclosed: true,
         };
       } else {
         throw new ParsingError(
@@ -906,16 +956,22 @@ export const parse = function (input: string, graceful = false): Ast {
             return elem;
           }
           return null;
-        }) &&
-        (utils.char("}") || graceful)
+        })
       ) {
-        return {
-          type: "InlineList",
-          elements: listElements,
-        };
-      } else {
-        index = fnbacktrack;
+        if (utils.char("}")) {
+          return {
+            type: "InlineList",
+            elements: listElements,
+          };
+        } else if (graceful) {
+          return {
+            type: "InlineList",
+            elements: listElements,
+            __unclosed: true,
+          };
+        }
       }
+      index = fnbacktrack;
       // look for dictionary key/value pairs
       if (
         utils.zeroOrMore(() => {
@@ -933,13 +989,20 @@ export const parse = function (input: string, graceful = false): Ast {
           }
           return null;
         }) &&
-        utils.whitSpc() &&
-        utils.char("}")
+        utils.whitSpc()
       ) {
-        return {
-          type: "InlineMap",
-          elements: dict,
-        };
+        if (utils.char("}")) {
+          return {
+            type: "InlineMap",
+            elements: dict,
+          };
+        } else if (graceful) {
+          return {
+            type: "InlineMap",
+            elements: dict,
+            __unclosed: true,
+          };
+        }
       } else {
         index = fnbacktrack;
       }
