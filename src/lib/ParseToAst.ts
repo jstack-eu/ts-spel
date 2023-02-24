@@ -609,11 +609,18 @@ export const parse = function (input: string, graceful = false): Ast {
     let innerExpression: Ast | null = null;
     if (utils.char("[")) {
       if ((innerExpression = expression()) || graceful) {
-        if (utils.char("]") || graceful) {
+        if (utils.char("]")) {
           return {
             type: "Indexer",
             nullSafeNavigation: false,
             index: innerExpression,
+          };
+        } else if (graceful) {
+          return {
+            type: "Indexer",
+            nullSafeNavigation: false,
+            index: innerExpression,
+            __unclosed: true,
           };
         }
         throw new ParsingError(input, index, "Expected ]");
