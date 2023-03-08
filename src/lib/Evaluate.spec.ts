@@ -180,4 +180,25 @@ describe("Evaluation", () => {
       )(parse("currentUserHasRole('ROLE_SUPER') ? 'hello' : npe()"))
     ).toBe("hello");
   });
+  it("List literal context", () => {
+    expect(getEvaluator({}, {})(parse(`{''}.![#this]`))).toEqual([""]);
+  });
+  it("string + string", () => {
+    expect(getEvaluator({}, {})(parse(`'hi' + 'hi'`))).toBe("hihi");
+  });
+  it("number + number", () => {
+    expect(getEvaluator({}, {})(parse(`1 + 1`))).toBe(2);
+  });
+  it("number + string", () => {
+    expect(getEvaluator({}, {})(parse(`1 + 'hi'`))).toBe("1hi");
+  });
+  it("string + number", () => {
+    expect(getEvaluator({}, {})(parse(`'hi' + '1'`))).toBe("hi1");
+  });
+  it("string + null", () => {
+    expect(getEvaluator({}, {})(parse(`'hi' + null`))).toBe("hinull");
+  });
+  it("null + string", () => {
+    expect(getEvaluator({}, {})(parse(`null + 'hi'`))).toBe("nullhi");
+  });
 });

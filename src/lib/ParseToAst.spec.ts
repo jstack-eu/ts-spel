@@ -223,6 +223,35 @@ it('Parsing: this == "z"', () => {
     },
   });
 });
+it('Parsing: a == "a" || b == ""', () => {
+  expect(parse('a == "a" || b == ""')).toEqual({
+    type: "OpOr",
+    left: {
+      type: "OpEQ",
+      left: {
+        type: "PropertyReference",
+        nullSafeNavigation: false,
+        propertyName: "a",
+      },
+      right: {
+        type: "StringLiteral",
+        value: "a",
+      },
+    },
+    right: {
+      type: "OpEQ",
+      left: {
+        type: "PropertyReference",
+        nullSafeNavigation: false,
+        propertyName: "b",
+      },
+      right: {
+        type: "StringLiteral",
+        value: "",
+      },
+    },
+  });
+});
 it('Parsing: foo.?[#this == "z"]', () => {
   expect(parse('foo.?[#this == "z"]')).toEqual({
     type: "CompoundExpression",

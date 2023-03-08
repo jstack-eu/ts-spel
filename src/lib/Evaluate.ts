@@ -68,32 +68,32 @@ export const getEvaluator = (
       }
     }, none);
   };
-  const binFloatOp = <Out extends number | boolean>(
-    op: (a: number, b: number) => Out
-  ) => (_left: Ast, _right: Ast) => {
-    const left = evaluate(_left);
-    const right = evaluate(_right);
-    if (typeof left !== "number") {
-      throw new Error(JSON.stringify(left) + " is not a float");
-    }
-    if (typeof right !== "number") {
-      throw new Error(JSON.stringify(right) + " is not a float");
-    }
-    return op(left, right);
-  };
-  const binStringOp = <Out extends number | boolean>(
-    op: (a: string, b: string) => Out
-  ) => (_left: Ast, _right: Ast) => {
-    const left = evaluate(_left);
-    const right = evaluate(_right);
-    if (typeof left !== "string") {
-      throw new Error(JSON.stringify(left) + " is not a string");
-    }
-    if (typeof right !== "string") {
-      throw new Error(JSON.stringify(right) + " is not a string");
-    }
-    return op(left, right);
-  };
+  const binFloatOp =
+    <Out extends number | boolean>(op: (a: number, b: number) => Out) =>
+    (_left: Ast, _right: Ast) => {
+      const left = evaluate(_left);
+      const right = evaluate(_right);
+      if (typeof left !== "number") {
+        throw new Error(JSON.stringify(left) + " is not a float");
+      }
+      if (typeof right !== "number") {
+        throw new Error(JSON.stringify(right) + " is not a float");
+      }
+      return op(left, right);
+    };
+  const binStringOp =
+    <Out extends number | boolean>(op: (a: string, b: string) => Out) =>
+    (_left: Ast, _right: Ast) => {
+      const left = evaluate(_left);
+      const right = evaluate(_right);
+      if (typeof left !== "string") {
+        throw new Error(JSON.stringify(left) + " is not a string");
+      }
+      if (typeof right !== "string") {
+        throw new Error(JSON.stringify(right) + " is not a string");
+      }
+      return op(left, right);
+    };
   const find = <E extends unknown>(
     array: E[],
     expression: Ast,
@@ -324,7 +324,44 @@ export const getEvaluator = (
         return Boolean(left || right);
       }
       case "OpPlus": {
-        return binFloatOp((a, b) => a + b)(ast.left, ast.right);
+        const left = evaluate(ast.left) ?? null;
+        const right = evaluate(ast.right) ?? null;
+
+        const isStringOrNumber = (
+          value: unknown
+        ): value is bigint | string | number | null => {
+          return (
+            typeof value == "bigint" ||
+            typeof value === "string" ||
+            typeof value === "number" ||
+            value === null
+          );
+        };
+        if (!isStringOrNumber(left)) {
+          throw new Error(JSON.stringify(left) + " is not a string or number.");
+        }
+        if (!isStringOrNumber(right)) {
+          throw new Error(
+            JSON.stringify(right) + " is not a string or number."
+          );
+        }
+        if (left === null && right === null) {
+          throw new Error(
+            "Operator + is not valid between operands null and null"
+          );
+        }
+        if (left == null && typeof right === "number") {
+          throw new Error(
+            "Operator + is not valid between operands null and of type number"
+          );
+        }
+        if (typeof left == "number" && right === null) {
+          throw new Error(
+            "Operator + is not valid between operands of type number and null"
+          );
+        }
+        // any is because typescript is being unreasonable here
+        return (left as any) + right;
       }
       case "OpPower": {
         return binFloatOp((a, b) => a ** b)(ast.base, ast.expression);
@@ -357,9 +394,8 @@ export const getEvaluator = (
       }
       case "PropertyReference": {
         const { nullSafeNavigation, propertyName } = ast;
-        const valueInContext: Maybe<unknown> = getPropertyValueInContext(
-          propertyName
-        );
+        const valueInContext: Maybe<unknown> =
+          getPropertyValueInContext(propertyName);
         if (isNone(valueInContext)) {
           if (nullSafeNavigation) {
             return null;
