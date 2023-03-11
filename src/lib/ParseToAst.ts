@@ -911,6 +911,7 @@ export const parse = function (input: string, graceful = false): Ast {
         if (stringLiteral === -1) {
           // it's unclosed, so let's just capture the rest
           const value = input.slice(index).trim().slice(1);
+          index = input.length;
           return {
             type: "StringLiteral",
             value,

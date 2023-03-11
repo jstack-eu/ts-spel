@@ -85,3 +85,19 @@ it("should gracefully parse unclosed string literals", () => {
     },
   });
 });
+
+it("should gracefully parse an unclosed string literal in an unclosed function call", () => {
+  expect(parse('foo("a', true)).toEqual<Ast>({
+    type: "MethodReference",
+    methodName: "foo",
+    __unclosed: true,
+    nullSafeNavigation: false,
+    args: [
+      {
+        type: "StringLiteral",
+        value: "a",
+        __unclosed: true,
+      },
+    ],
+  });
+});
