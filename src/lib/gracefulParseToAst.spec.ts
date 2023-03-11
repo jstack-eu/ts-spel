@@ -69,3 +69,19 @@ it("should gracefully parse incomplete selection expression", () => {
     ],
   });
 });
+
+it("should gracefully parse unclosed string literals", () => {
+  expect(parse("a == 'abc ", true)).toEqual<Ast>({
+    type: "OpEQ",
+    left: {
+      type: "PropertyReference",
+      nullSafeNavigation: false,
+      propertyName: "a",
+    },
+    right: {
+      type: "StringLiteral",
+      value: "abc",
+      __unclosed: true,
+    },
+  });
+});

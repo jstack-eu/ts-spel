@@ -2,6 +2,7 @@ export type Ast =
   | {
       type: "StringLiteral";
       value: string;
+      __unclosed?: true;
     }
   | {
       type: "Ternary";
