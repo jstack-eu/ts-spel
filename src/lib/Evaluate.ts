@@ -56,7 +56,7 @@ export const getEvaluator = (
     }
   };
   const getPropertyValueInContext = (variable: string): Maybe => {
-    return stack.reduce<Maybe>((prev, curr) => {
+    return stack.reverse().reduce<Maybe>((prev, curr) => {
       if (isSome(prev)) {
         return prev;
       } else if (variable === "this") {
@@ -213,6 +213,18 @@ export const getEvaluator = (
         }, {});
       }
       case "MethodReference": {
+        if (ast.methodName === "size") {
+          const currentContext = getHead();
+          if (Array.isArray(currentContext)) {
+            return currentContext.length;
+          }
+        }
+        if (ast.methodName === "contains") {
+          const currentContext = getHead();
+          if (Array.isArray(currentContext)) {
+            return currentContext.includes(evaluate(ast.args[0]));
+          }
+        }
         const valueInContext = getPropertyValueInContext(ast.methodName);
         if (isSome(valueInContext)) {
           const { value } = valueInContext;
@@ -220,19 +232,8 @@ export const getEvaluator = (
           if (typeof value === "function") {
             return value(...evaluatedArguments);
           }
-        } else {
-          const currentContext = getHead();
-          if (Array.isArray(currentContext)) {
-            if (ast.methodName === "size") {
-              return currentContext.length;
-            }
-            if (ast.methodName === "contains") {
-              return currentContext.includes(evaluate(ast.args[0]));
-            }
-          }
-          if (!ast.nullSafeNavigation) {
-            throw new Error("Method " + ast.methodName + " not found.");
-          }
+        } else if (!ast.nullSafeNavigation) {
+          throw new Error("Method " + ast.methodName + " not found.");
         }
         return null;
       }

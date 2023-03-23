@@ -201,4 +201,21 @@ describe("Evaluation", () => {
   it("null + string", () => {
     expect(getEvaluator({}, {})(parse(`null + 'hi'`))).toBe("nullhi");
   });
+  it("nested properties are traversed in the right order", () => {
+    expect(
+      getEvaluator(
+        {
+          a: {
+            id: "1",
+            b: {
+              a: {
+                id: "2",
+              },
+            },
+          },
+        },
+        {}
+      )(parse(`a.b.a.id`))
+    ).toEqual("2");
+  });
 });
