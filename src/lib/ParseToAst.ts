@@ -962,6 +962,11 @@ export const parse = function (input: string, graceful = false): Ast {
     const dict: {
       [key: string]: Ast;
     } = {};
+
+    /**
+     * If we're in graceful mode, let's store any lists we find, and only return them if we don't also find a possible 'map'
+     */
+    let foundGracefulList: Ast;
     utils.whitSpc();
     if (utils.char("{")) {
       const fnbacktrack = index;
@@ -984,7 +989,8 @@ export const parse = function (input: string, graceful = false): Ast {
             elements: listElements,
           };
         } else if (graceful) {
-          return {
+          // check for map first.
+          foundGracefulList = {
             type: "InlineList",
             elements: listElements,
             __unclosed: true,
@@ -1025,6 +1031,9 @@ export const parse = function (input: string, graceful = false): Ast {
         }
       } else {
         index = fnbacktrack;
+      }
+      if (graceful && foundGracefulList) {
+        return foundGracefulList;
       }
       throw new ParsingError(input, index, "Expected }");
     }

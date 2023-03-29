@@ -101,3 +101,73 @@ it("should gracefully parse an unclosed string literal in an unclosed function c
     ],
   });
 });
+
+it("should gracefully unclosed Inline Maps", () => {
+  expect(
+    parse(
+      `#f().date.of().is.after({
+        date: "foo",
+        time: f.`,
+      true
+    )
+  ).toEqual<Ast>({
+    type: "CompoundExpression",
+    expressionComponents: [
+      {
+        type: "FunctionReference",
+        nullSafeNavigation: false,
+        functionName: "f",
+        args: [],
+      },
+      {
+        type: "PropertyReference",
+        propertyName: "date",
+        nullSafeNavigation: false,
+      },
+      {
+        type: "MethodReference",
+        nullSafeNavigation: false,
+        methodName: "of",
+        args: [],
+      },
+      {
+        type: "PropertyReference",
+        propertyName: "is",
+        nullSafeNavigation: false,
+      },
+      {
+        type: "MethodReference",
+        nullSafeNavigation: false,
+        methodName: "after",
+        args: [
+          {
+            type: "InlineMap",
+            elements: {
+              date: {
+                type: "StringLiteral",
+                value: "foo",
+              },
+              time: {
+                type: "CompoundExpression",
+                expressionComponents: [
+                  {
+                    nullSafeNavigation: false,
+                    propertyName: "f",
+                    type: "PropertyReference",
+                  },
+                  {
+                    nullSafeNavigation: false,
+                    propertyName: "",
+                    type: "PropertyReference",
+                  },
+                ],
+              },
+            },
+            __unclosed: true,
+          },
+        ],
+        __unclosed: true,
+      },
+    ],
+  });
+});
