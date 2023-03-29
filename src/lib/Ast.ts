@@ -142,7 +142,7 @@ export type Ast =
       type: "MethodReference";
       nullSafeNavigation: boolean;
       methodName: string;
-      args: Ast[];
+      args: (Ast | null)[]; // null if graceful
       __unclosed?: true;
     }
   | {

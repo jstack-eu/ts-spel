@@ -102,6 +102,22 @@ it("should gracefully parse an unclosed string literal in an unclosed function c
   });
 });
 
+it("should gracefully parse unclosed method call, including empty trailing arguments after last comma", () => {
+  expect(parse('foo("a",', true)).toEqual<Ast>({
+    type: "MethodReference",
+    methodName: "foo",
+    __unclosed: true,
+    nullSafeNavigation: false,
+    args: [
+      {
+        type: "StringLiteral",
+        value: "a",
+      },
+      null,
+    ],
+  });
+});
+
 it("should gracefully unclosed Inline Maps", () => {
   expect(
     parse(

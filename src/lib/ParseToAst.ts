@@ -647,13 +647,16 @@ export const parse = function (input: string, graceful = false): Ast {
     if ((ident = utils.identifier())) {
       const fnbacktrack = index;
       if (utils.char("(")) {
+        let precededByComma = false;
         if (
           utils.zeroOrMore(() => {
             const arg = expression();
             if (arg) {
               args.push(arg);
-              utils.char(",");
+              precededByComma = Boolean(utils.char(","));
               return arg;
+            } else if (graceful && precededByComma) {
+              args.push(null);
             }
             return null;
           })
