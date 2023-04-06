@@ -213,6 +213,12 @@ export const getEvaluator = (
         }, {});
       }
       case "MethodReference": {
+        if (ast.methodName === "length") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            return currentContext.length;
+          }
+        }
         if (ast.methodName === "size") {
           const currentContext = getHead();
           if (Array.isArray(currentContext)) {

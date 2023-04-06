@@ -218,4 +218,16 @@ describe("Evaluation", () => {
       )(parse(`a.b.a.id`))
     ).toEqual("2");
   });
+  it("Make .length() work on strings", () => {
+    expect(getEvaluator({}, {})(parse(`"12345".length()`))).toEqual(5);
+    expect(getEvaluator({}, {})(parse(`"12345".length`))).toEqual(5);
+    expect(
+      getEvaluator(
+        {
+          getStr: () => "1234",
+        },
+        {}
+      )(parse(`getStr().length()`))
+    ).toEqual(4);
+  });
 });
