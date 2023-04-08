@@ -135,11 +135,25 @@ describe("Evaluation", () => {
     expect(evaluate(parse("var"))).toBe("fromLocals");
   });
   it("Null behavior with boolean operators", () => {
-    expect(getEvaluator({}, {})(parse("!null"))).toBe(true);
-    expect(getEvaluator({}, {})(parse("null || true"))).toBe(true);
-    expect(getEvaluator({}, {})(parse("null && true"))).toBe(null);
-    expect(getEvaluator({}, {})(parse("true && null"))).toBe(null);
-    expect(getEvaluator({}, {})(parse("!!(true && null)"))).toBe(false);
+    expect(
+      getEvaluator({}, {}, { disableBoolOpChecks: true })(parse("!null"))
+    ).toBe(true);
+    expect(
+      getEvaluator({}, {}, { disableBoolOpChecks: true })(parse("null || true"))
+    ).toBe(true);
+    expect(
+      getEvaluator({}, {}, { disableBoolOpChecks: true })(parse("null && true"))
+    ).toBe(null);
+    expect(
+      getEvaluator({}, {}, { disableBoolOpChecks: true })(parse("true && null"))
+    ).toBe(null);
+    expect(
+      getEvaluator(
+        {},
+        {},
+        { disableBoolOpChecks: true }
+      )(parse("!!(true && null)"))
+    ).toBe(false);
   });
   it("Boolean operators short circuit: &&", () => {
     expect(
@@ -229,5 +243,41 @@ describe("Evaluation", () => {
         {}
       )(parse(`getStr().length()`))
     ).toEqual(4);
+  });
+  it("example-4-8-23", () => {
+    const exp = `record && record?.hasPossibleMatches == true && allowsMerge(getAccessLevelForEntity(viewConfig, resource))`;
+    const ast = parse(exp);
+    expect(
+      getEvaluator(
+        {
+          record: {
+            hasPossibleMatches: false,
+          },
+          allowsMerge: () => "1",
+          getAccessLevelForEntity: () => "2",
+        },
+        {},
+        {
+          disableBoolOpChecks: true,
+        }
+      )(ast)
+    ).toBe(false);
+    expect(
+      getEvaluator(
+        {
+          record: {
+            hasPossibleMatches: true,
+          },
+          viewConfig: "3",
+          resource: "4",
+          allowsMerge: () => "1",
+          getAccessLevelForEntity: () => "2",
+        },
+        {},
+        {
+          disableBoolOpChecks: true,
+        }
+      )(ast)
+    ).toBe("1");
   });
 });

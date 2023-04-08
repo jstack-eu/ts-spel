@@ -62,7 +62,7 @@ export const getEvaluator = (
     }
   };
   const getPropertyValueInContext = (variable: string): Maybe => {
-    return stack.reverse().reduce<Maybe>((prev, curr) => {
+    return [...stack].reverse().reduce<Maybe>((prev, curr) => {
       if (isSome(prev)) {
         return prev;
       } else if (variable === "this") {
@@ -147,7 +147,7 @@ export const getEvaluator = (
         const evaluatedArguments = ast.args.map(evaluate);
         if (isNone(maybeProvidedFunction)) {
           if (!ast.nullSafeNavigation) {
-            throw new Error("Method " + ast.functionName + " not found.");
+            throw new Error("Function " + ast.functionName + " not found.");
           } else {
             return null;
           }
@@ -266,16 +266,15 @@ export const getEvaluator = (
       }
       case "OpAnd": {
         const left = evaluate(ast.left);
+        if (!disableBoolOpChecks && typeof left !== "boolean") {
+          throw new Error(JSON.stringify(left) + " is not a boolean");
+        }
+        if (!left) {
+          return left;
+        }
         const right = evaluate(ast.right);
-
-        // maybe remove checks so we can do 0, '', etc. checks as well.
-        if (!disableBoolOpChecks) {
-          if (left !== null && typeof left !== "boolean") {
-            throw new Error(JSON.stringify(left) + " is not a null/boolean");
-          }
-          if (right !== null && typeof right !== "boolean") {
-            throw new Error(JSON.stringify(right) + " is not a null/boolean");
-          }
+        if (!disableBoolOpChecks && typeof right !== "boolean") {
+          throw new Error(JSON.stringify(right) + " is not a boolean");
         }
         return left && right;
       }
@@ -336,8 +335,18 @@ export const getEvaluator = (
       }
       case "OpOr": {
         const left = evaluate(ast.left);
+
+        if (!disableBoolOpChecks && typeof left !== "boolean") {
+          throw new Error(JSON.stringify(left) + " is not a boolean");
+        }
+        if (left) {
+          return left;
+        }
         const right = evaluate(ast.right);
-        return Boolean(left || right);
+        if (!disableBoolOpChecks && typeof right !== "boolean") {
+          throw new Error(JSON.stringify(right) + " is not a boolean");
+        }
+        return left || right;
       }
       case "OpPlus": {
         const left = evaluate(ast.left) ?? null;
