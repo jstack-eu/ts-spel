@@ -313,4 +313,15 @@ describe("Evaluation", () => {
       )(ast)
     ).toEqual(["NONCOORD", "PT", "PTA", "CAT1"]);
   });
+
+  it("add 'matches' method to strings: true match", () => {
+    const exp = `"firstName".matches("^f")`;
+    const ast = parse(exp);
+    expect(getEvaluator({}, {})(ast)).toBe(true);
+  });
+  it("add 'matches' method to strings: false match", () => {
+    const exp = `"firstName".matches("^v")`;
+    const ast = parse(exp);
+    expect(getEvaluator({}, {})(ast)).toBe(false);
+  });
 });

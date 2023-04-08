@@ -225,6 +225,19 @@ export const getEvaluator = (
             return currentContext.length;
           }
         }
+        if (ast.methodName === "matches") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            const rx = evaluate(ast.args[0]);
+            if (typeof rx !== "string") {
+              throw new Error(
+                "Cannot call 'string.matches()' with argument of type " +
+                  typeof rx
+              );
+            }
+            return new RegExp(rx).test(currentContext);
+          }
+        }
         if (ast.methodName === "size") {
           const currentContext = getHead();
           if (Array.isArray(currentContext)) {
