@@ -166,6 +166,21 @@ describe("Evaluation", () => {
     ).toBe(false);
   });
 
+  it("Boolean operators AND", () => {
+    expect(getEvaluator({}, {})(parse("true AND false"))).toBe(false);
+    expect(getEvaluator({}, {})(parse("false AND true"))).toBe(false);
+    expect(getEvaluator({}, {})(parse("true AND true"))).toBe(true);
+    expect(getEvaluator({}, {})(parse("TRUE AND TRUE"))).toBe(true);
+  });
+
+  it("Boolean operators OR", () => {
+    expect(getEvaluator({}, {})(parse("false OR false"))).toBe(false);
+    expect(getEvaluator({}, {})(parse("true OR false"))).toBe(true);
+    expect(getEvaluator({}, {})(parse("false or true"))).toBe(true);
+    expect(getEvaluator({}, {})(parse("true Or true"))).toBe(true);
+    expect(getEvaluator({}, {})(parse("TRUE OR TRUE"))).toBe(true);
+  });
+
   it("Boolean operators short circuit: ||", () => {
     expect(
       getEvaluator(

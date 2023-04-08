@@ -192,6 +192,23 @@ export const parse = function (input: string, graceful = false): Ast {
           throw new ParsingError(input, index, "Missing Character |");
         }
       }
+      // Now opOr
+      const backtrack = index;
+      const keyword = utils.identifier();
+      if (keyword?.toLowerCase() === "or") {
+        if ((right = relationalExpression()) || graceful) {
+          left = {
+            type: "OpOr",
+            left,
+            right,
+          };
+          return left;
+        } else {
+          throw new ParsingError(input, index, "No right operand for OR");
+        }
+      } else {
+        index = backtrack;
+      }
       return null;
     });
     return left;
@@ -221,6 +238,24 @@ export const parse = function (input: string, graceful = false): Ast {
           throw new ParsingError(input, index, "Missing Character &");
         }
       }
+      // Now try AND/and
+      const backtrack = index;
+      const keyword = utils.identifier();
+      if (keyword?.toLowerCase() === "and") {
+        if ((right = relationalExpression()) || graceful) {
+          left = {
+            type: "OpAnd",
+            left,
+            right,
+          };
+          return left;
+        } else {
+          throw new ParsingError(input, index, "No right operand for AND");
+        }
+      } else {
+        index = backtrack;
+      }
+
       return null;
     });
     return left;
@@ -306,6 +341,7 @@ export const parse = function (input: string, graceful = false): Ast {
         throw new ParsingError(input, index, "Assignment not allowed");
       }
     } else {
+      const backtrack = index;
       let keyword = utils.identifier();
       if (keyword === "matches") {
         if ((right = sumExpression()) || graceful) {
@@ -335,13 +371,16 @@ export const parse = function (input: string, graceful = false): Ast {
             "No right operand for 'between'"
           );
         }
-      } else if (keyword) {
-        throw new ParsingError(
-          input,
-          index,
-          "Not an Operator",
-          `"${keyword}" is not an operator`
-        );
+      } else {
+        if (keyword && !["and", "or"].includes(keyword?.toLowerCase())) {
+          throw new ParsingError(
+            input,
+            index,
+            "Not an Operator",
+            `"${keyword}" is not an operator`
+          );
+        }
+        index = backtrack;
       }
     }
     log("fell through");
@@ -925,17 +964,17 @@ export const parse = function (input: string, graceful = false): Ast {
       },
       number,
       () =>
-        utils.chars("true") && {
+        utils.regExp(/true/i) && {
           type: "BooleanLiteral",
           value: true,
         },
       () =>
-        utils.chars("false") && {
+        utils.regExp(/false/i) && {
           type: "BooleanLiteral",
           value: false,
         },
       () =>
-        utils.chars("null") && {
+        utils.regExp(/null/i) && {
           type: "NullLiteral",
         }
     );
