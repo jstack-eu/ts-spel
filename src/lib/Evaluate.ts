@@ -74,19 +74,42 @@ export const getEvaluator = (
       }
     }, none);
   };
-  const binFloatOp =
-    <Out extends number | boolean>(op: (a: number, b: number) => Out) =>
-    (_left: Ast, _right: Ast) => {
+  function binFloatOp<Out extends number | boolean>(
+    op: (a: number, b: number) => Out
+  );
+  function binFloatOp<Out extends number | boolean>(
+    op: (a: number, b: number) => Out,
+    allowNull: false
+  );
+  function binFloatOp<Out extends number | boolean>(
+    op: (a: number | null, b: number | null) => Out,
+    allowNull: true
+  );
+  function binFloatOp<Out extends number | boolean>(
+    op: (a: number | null, b: number | null) => Out,
+    allowNull = false
+  ) {
+    return (_left: Ast, _right: Ast) => {
       const left = evaluate(_left);
       const right = evaluate(_right);
-      if (typeof left !== "number") {
+      if (
+        typeof left !== "number" &&
+        !(allowNull && (left === null || typeof left === "undefined"))
+      ) {
         throw new Error(JSON.stringify(left) + " is not a float");
       }
-      if (typeof right !== "number") {
+      if (
+        typeof right !== "number" &&
+        !(allowNull && (right === null || typeof right === "undefined"))
+      ) {
         throw new Error(JSON.stringify(right) + " is not a float");
       }
-      return op(left, right);
+      return op(
+        (left ?? null) as number | null,
+        (right ?? null) as number | null
+      );
     };
+  }
   const binStringOp =
     <Out extends number | boolean>(op: (a: string, b: string) => Out) =>
     (_left: Ast, _right: Ast) => {
@@ -304,16 +327,16 @@ export const getEvaluator = (
         return left === right;
       }
       case "OpGE": {
-        return binFloatOp((a, b) => a >= b)(ast.left, ast.right);
+        return binFloatOp((a, b) => a >= b, true)(ast.left, ast.right);
       }
       case "OpGT": {
-        return binFloatOp((a, b) => a > b)(ast.left, ast.right);
+        return binFloatOp((a, b) => a > b, true)(ast.left, ast.right);
       }
       case "OpLE": {
-        return binFloatOp((a, b) => a <= b)(ast.left, ast.right);
+        return binFloatOp((a, b) => a <= b, true)(ast.left, ast.right);
       }
       case "OpLT": {
-        return binFloatOp((a, b) => a < b)(ast.left, ast.right);
+        return binFloatOp((a, b) => a < b, true)(ast.left, ast.right);
       }
       case "OpMatches": {
         return binStringOp((a, b) => RegExp(b).test(a))(ast.left, ast.right);

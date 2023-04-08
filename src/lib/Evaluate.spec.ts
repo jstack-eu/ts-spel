@@ -118,6 +118,34 @@ describe("Evaluation", () => {
     expect(getEvaluator({}, {})(parse("5 >= 5"))).toBe(true);
     expect(getEvaluator({}, {})(parse("4 >= 5"))).toBe(false);
   });
+  it("number comparison works with nulls and undefined", () => {
+    expect(getEvaluator({}, {})(parse("null >= 5"))).toBe(false);
+    expect(getEvaluator({}, {})(parse("4 >= null"))).toBe(true);
+    expect(
+      getEvaluator(
+        {
+          getUndef: () => undefined,
+        },
+        {}
+      )(parse("4 >= getUndef()"))
+    ).toBe(true);
+    expect(
+      getEvaluator(
+        {
+          getUndef: () => undefined,
+        },
+        {}
+      )(parse("4 < getUndef()"))
+    ).toBe(false);
+    expect(
+      getEvaluator(
+        {
+          getUndef: () => undefined,
+        },
+        {}
+      )(parse("4 == getUndef()"))
+    ).toBe(false);
+  });
   it("Can evaluate functions and variables", () => {
     const evaluate = getEvaluator(
       {
