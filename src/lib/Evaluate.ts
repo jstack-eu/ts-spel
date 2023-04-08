@@ -235,7 +235,9 @@ export const getEvaluator = (
                   typeof rx
               );
             }
-            return new RegExp(rx).test(currentContext);
+            const _match = currentContext.match(rx);
+            // exact match (i.e. ^...$)
+            return Boolean(_match && currentContext === _match[0]);
           }
         }
         if (ast.methodName === "size") {

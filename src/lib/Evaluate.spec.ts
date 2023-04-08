@@ -315,12 +315,17 @@ describe("Evaluation", () => {
   });
 
   it("add 'matches' method to strings: true match", () => {
-    const exp = `"firstName".matches("^f")`;
+    const exp = `"firstName".matches("f.*")`;
     const ast = parse(exp);
     expect(getEvaluator({}, {})(ast)).toBe(true);
   });
+  it("add 'matches' method to strings: non-full match (false in Java/Spel, but true in js). Match Java", () => {
+    const exp = `"firstName".matches("f")`;
+    const ast = parse(exp);
+    expect(getEvaluator({}, {})(ast)).toBe(false);
+  });
   it("add 'matches' method to strings: false match", () => {
-    const exp = `"firstName".matches("^v")`;
+    const exp = `"firstName".matches("v")`;
     const ast = parse(exp);
     expect(getEvaluator({}, {})(ast)).toBe(false);
   });
