@@ -35,10 +35,16 @@ const maybeFromUndefined = (value: unknown) => {
   return some(value);
 };
 
+export type EvalOptions = {
+  disableBoolOpChecks?: true;
+};
+
 export const getEvaluator = (
   rootContext: Record<string, unknown>,
-  functionsAndVariables: Record<string, unknown>
+  functionsAndVariables: Record<string, unknown>,
+  options?: EvalOptions
 ) => {
+  const disableBoolOpChecks = options?.disableBoolOpChecks ?? false;
   const stack: unknown[] = [rootContext]; // <- could be a class.
   const getHead = () => {
     if (stack.length > 0) {
@@ -261,12 +267,15 @@ export const getEvaluator = (
       case "OpAnd": {
         const left = evaluate(ast.left);
         const right = evaluate(ast.right);
+
         // maybe remove checks so we can do 0, '', etc. checks as well.
-        if (left !== null && typeof left !== "boolean") {
-          throw new Error(JSON.stringify(left) + " is not a null/boolean");
-        }
-        if (right !== null && typeof right !== "boolean") {
-          throw new Error(JSON.stringify(right) + " is not a null/boolean");
+        if (!disableBoolOpChecks) {
+          if (left !== null && typeof left !== "boolean") {
+            throw new Error(JSON.stringify(left) + " is not a null/boolean");
+          }
+          if (right !== null && typeof right !== "boolean") {
+            throw new Error(JSON.stringify(right) + " is not a null/boolean");
+          }
         }
         return left && right;
       }
