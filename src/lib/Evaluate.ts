@@ -271,13 +271,13 @@ export const getEvaluator = (
           throw new Error(JSON.stringify(left) + " is not a boolean");
         }
         if (!left) {
-          return left;
+          return !!left;
         }
         const right = evaluate(ast.right);
         if (!disableBoolOpChecks && typeof right !== "boolean") {
           throw new Error(JSON.stringify(right) + " is not a boolean");
         }
-        return left && right;
+        return !!right;
       }
       case "OpDivide": {
         return binFloatOp((a, b) => a / b)(ast.left, ast.right);
@@ -341,13 +341,13 @@ export const getEvaluator = (
           throw new Error(JSON.stringify(left) + " is not a boolean");
         }
         if (left) {
-          return left;
+          return !!left;
         }
         const right = evaluate(ast.right);
         if (!disableBoolOpChecks && typeof right !== "boolean") {
           throw new Error(JSON.stringify(right) + " is not a boolean");
         }
-        return left || right;
+        return !!right;
       }
       case "OpPlus": {
         const left = evaluate(ast.left) ?? null;

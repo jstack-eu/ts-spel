@@ -143,10 +143,10 @@ describe("Evaluation", () => {
     ).toBe(true);
     expect(
       getEvaluator({}, {}, { disableBoolOpChecks: true })(parse("null && true"))
-    ).toBe(null);
+    ).toBe(false);
     expect(
       getEvaluator({}, {}, { disableBoolOpChecks: true })(parse("true && null"))
-    ).toBe(null);
+    ).toBe(false);
     expect(
       getEvaluator(
         {},
@@ -293,7 +293,7 @@ describe("Evaluation", () => {
           disableBoolOpChecks: true,
         }
       )(ast)
-    ).toBe("1");
+    ).toBe(true);
   });
 
   it("example-4-9-23 - tests method calls binding to the correct 'this'", () => {
