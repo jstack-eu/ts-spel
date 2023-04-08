@@ -1,5 +1,6 @@
 import { Ast } from "./Ast";
 import { ParsingError } from "./CustomErrors";
+import { fastCharCodeIsWhitespace } from "./fastIsWhitespace";
 import _stringLiteral from "./stringLiteralSPELStyle";
 
 // turn true for debugging.
@@ -100,7 +101,10 @@ export const parse = function (input: string, graceful = false): Ast {
       }
     },
     whitSpc: function () {
-      while (index < input.length && input.charAt(index).trim() === "") {
+      while (
+        index < input.length &&
+        fastCharCodeIsWhitespace(input.charCodeAt(index))
+      ) {
         index += 1;
       }
       return true;
