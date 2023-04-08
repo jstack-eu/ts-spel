@@ -7,7 +7,15 @@ const Q = {
   DOUBLE_QUOTE: '"',
   TICK_QUOTE: "`",
 };
-const isQuoteChar = (ch: string) => Object.values(Q).includes(ch);
+const isQuoteChar = (ch: string) => {
+  switch (ch) {
+    case Q.SINGLE_QUOTE:
+    case Q.DOUBLE_QUOTE:
+    case Q.TICK_QUOTE:
+      return true;
+  }
+  return false;
+};
 
 // returnValue[1] is the index remaining after a successful string match
 // -1 means unclosed string error
