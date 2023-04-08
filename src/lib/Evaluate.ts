@@ -237,12 +237,13 @@ export const getEvaluator = (
             return currentContext.includes(evaluate(ast.args[0]));
           }
         }
-        const valueInContext = getPropertyValueInContext(ast.methodName);
-        if (isSome(valueInContext)) {
-          const { value } = valueInContext;
+        const head = getHead();
+        const valueInTopContext = head?.[ast.methodName];
+        if (valueInTopContext) {
           const evaluatedArguments = ast.args.map(evaluate); // <- arguments are evaluated lazily
-          if (typeof value === "function") {
-            return value(...evaluatedArguments);
+          if (typeof valueInTopContext === "function") {
+            const boundFn = valueInTopContext.bind(head);
+            return boundFn(...evaluatedArguments);
           }
         } else if (!ast.nullSafeNavigation) {
           throw new Error("Method " + ast.methodName + " not found.");

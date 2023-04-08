@@ -295,4 +295,22 @@ describe("Evaluation", () => {
       )(ast)
     ).toBe("1");
   });
+
+  it("example-4-9-23 - tests method calls binding to the correct 'this'", () => {
+    const exp = `#getConcept().group.split(',')`;
+    const ast = parse(exp);
+    expect(
+      getEvaluator(
+        {},
+        {
+          getConcept: () => ({
+            group: "NONCOORD,PT,PTA,CAT1",
+          }),
+        },
+        {
+          disableBoolOpChecks: true,
+        }
+      )(ast)
+    ).toEqual(["NONCOORD", "PT", "PTA", "CAT1"]);
+  });
 });
