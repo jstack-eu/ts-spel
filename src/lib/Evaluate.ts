@@ -133,6 +133,9 @@ export const getEvaluator = (
       stack.push(e);
       const result = evaluate(expression);
       stack.pop();
+      if (disableBoolOpChecks) {
+        return Boolean(result);
+      }
       if (typeof result !== "boolean") {
         throw new Error("Result of selection expression is not Boolean");
       }
@@ -484,6 +487,9 @@ export const getEvaluator = (
             stack.push(v);
             const result = evaluate(expression);
             stack.pop();
+            if (disableBoolOpChecks) {
+              return Boolean(result);
+            }
             if (typeof result !== "boolean") {
               throw new Error(
                 "Result " +
@@ -503,6 +509,9 @@ export const getEvaluator = (
               stack.push({ key, value });
               const result = evaluate(expression);
               stack.pop();
+              if (disableBoolOpChecks) {
+                return Boolean(result);
+              }
               if (typeof result !== "boolean") {
                 throw new Error(
                   "Result " +
@@ -571,7 +580,10 @@ export const getEvaluator = (
       case "Ternary": {
         const { expression, ifTrue, ifFalse } = ast;
         const conditionResult = evaluate(expression);
-        if (conditionResult === true) {
+        if (
+          conditionResult === true ||
+          (disableBoolOpChecks && Boolean(conditionResult))
+        ) {
           return evaluate(ifTrue);
         } else if (conditionResult === false || conditionResult === null) {
           return evaluate(ifFalse);

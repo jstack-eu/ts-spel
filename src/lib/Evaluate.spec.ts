@@ -357,4 +357,19 @@ describe("Evaluation", () => {
     const ast = parse(exp);
     expect(getEvaluator({}, {})(ast)).toBe(false);
   });
+  it("ternary boolean checks", () => {
+    const exp = `"truthy" ? "y" : "n"`;
+    const ast = parse(exp);
+    expect(() => getEvaluator({}, {})(ast)).toThrow();
+    expect(getEvaluator({}, {}, { disableBoolOpChecks: true })(ast)).toBe("y");
+  });
+
+  it("Selection boolean checks", () => {
+    const exp = `{1}.?["y"]`;
+    const ast = parse(exp);
+    expect(() => getEvaluator({}, {})(ast)).toThrow();
+    expect(getEvaluator({}, {}, { disableBoolOpChecks: true })(ast)).toEqual([
+      1,
+    ]);
+  });
 });
