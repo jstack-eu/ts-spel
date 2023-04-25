@@ -342,6 +342,12 @@ describe("Evaluation", () => {
     ).toEqual(["NONCOORD", "PT", "PTA", "CAT1"]);
   });
 
+  it("'matches' operator", () => {
+    const exp = `"firstName" matches "f.*"`;
+    const ast = parse(exp);
+    expect(getEvaluator({}, {})(ast)).toBe(true);
+  });
+
   it("add 'matches' method to strings: true match", () => {
     const exp = `"firstName".matches("f.*")`;
     const ast = parse(exp);

@@ -1,5 +1,6 @@
 import { Ast } from "./Ast";
 import { UnexpectedError } from "./CustomErrors";
+import { compile as compileRegex } from "java-regex-js";
 
 type Some<R = unknown> = {
   _tag: "some";
@@ -261,9 +262,7 @@ export const getEvaluator = (
                   typeof rx
               );
             }
-            const _match = currentContext.match(rx);
-            // exact match (i.e. ^...$)
-            return Boolean(_match && currentContext === _match[0]);
+            return compileRegex(rx)(currentContext);
           }
         }
         if (ast.methodName === "size") {
@@ -342,7 +341,7 @@ export const getEvaluator = (
         return binFloatOp((a, b) => a < b, true)(ast.left, ast.right);
       }
       case "OpMatches": {
-        return binStringOp((a, b) => RegExp(b).test(a))(ast.left, ast.right);
+        return binStringOp((a, b) => compileRegex(b)(a))(ast.left, ast.right);
       }
       case "OpBetween": {
         const left = evaluate(ast.left);
