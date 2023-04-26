@@ -15,7 +15,7 @@
     "prettier": "prettier --write '**/*.{ts,js,tsx,jsx}'"
   },
   "dependencies": {
-    "java-regex-js": "^0.0.2",
+    "java-regex-js": "^0.0.3",
     "ts-custom-error": "^3.3.1"
   },
   "devDependencies": {
