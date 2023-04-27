@@ -117,7 +117,25 @@ it("should gracefully parse unclosed method call, including empty trailing argum
     ],
   });
 });
-
+it("should gracefully unclosed Inline Lists and Maps", () => {
+  expect(parse("{{firstName: firstName", true)).toEqual<Ast>({
+    type: "InlineList",
+    elements: [
+      {
+        type: "InlineMap",
+        elements: {
+          firstName: {
+            nullSafeNavigation: false,
+            propertyName: "firstName",
+            type: "PropertyReference",
+          },
+        },
+        __unclosed: true,
+      },
+    ],
+    __unclosed: true,
+  });
+});
 it("should gracefully unclosed Inline Maps", () => {
   expect(
     parse(

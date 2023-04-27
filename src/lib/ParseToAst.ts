@@ -1069,6 +1069,9 @@ export const parse = function (input: string, graceful = false): Ast {
             elements: dict,
           };
         } else if (graceful) {
+          if (Object.keys(dict).length === 0) {
+            return foundGracefulList;
+          }
           return {
             type: "InlineMap",
             elements: dict,
