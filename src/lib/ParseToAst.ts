@@ -128,6 +128,15 @@ export const parse = function (input: string, graceful = false): Ast {
     },
   };
 
+  const someInputRemaining = () => index !== input.length;
+  const getOpIsClosed = () =>
+    graceful
+      ? (() => {
+          utils.whitSpc();
+          return someInputRemaining();
+        })()
+      : undefined;
+
   const expression = function (): Ast | null {
     log("expression");
     utils.whitSpc();
@@ -149,6 +158,7 @@ export const parse = function (input: string, graceful = false): Ast {
           type: "Elvis",
           expression: exp1,
           ifFalse: exp2,
+          _isClosed: getOpIsClosed(),
         };
       } else {
         let exp2: Ast | null = null;
@@ -162,6 +172,7 @@ export const parse = function (input: string, graceful = false): Ast {
             expression: exp1,
             ifTrue: exp2,
             ifFalse: exp3,
+            _isClosed: getOpIsClosed(),
           };
         } else {
           throw new ParsingError(input, index, "Incomplete Ternary");
@@ -187,6 +198,7 @@ export const parse = function (input: string, graceful = false): Ast {
               type: "OpOr",
               left,
               right,
+              _isClosed: getOpIsClosed(),
             };
             return left;
           } else {
@@ -205,6 +217,7 @@ export const parse = function (input: string, graceful = false): Ast {
             type: "OpOr",
             left,
             right,
+            _isClosed: getOpIsClosed(),
           };
           return left;
         } else {
@@ -233,6 +246,7 @@ export const parse = function (input: string, graceful = false): Ast {
               type: "OpAnd",
               left,
               right,
+              _isClosed: getOpIsClosed(),
             };
             return left;
           } else {
@@ -282,6 +296,7 @@ export const parse = function (input: string, graceful = false): Ast {
             type: "OpGE",
             left,
             right,
+            _isClosed: getOpIsClosed(),
           };
         } else {
           throw new ParsingError(input, index, "No right operand for >=");
@@ -291,6 +306,7 @@ export const parse = function (input: string, graceful = false): Ast {
           type: "OpGT",
           left,
           right,
+          _isClosed: getOpIsClosed(),
         };
       } else {
         throw new ParsingError(input, index, "No right operand for >");
@@ -302,6 +318,7 @@ export const parse = function (input: string, graceful = false): Ast {
             type: "OpLE",
             left,
             right,
+            _isClosed: getOpIsClosed(),
           };
         } else {
           throw new ParsingError(input, index, "No right operand for <=");
@@ -311,6 +328,7 @@ export const parse = function (input: string, graceful = false): Ast {
           type: "OpLT",
           left,
           right,
+          _isClosed: getOpIsClosed(),
         };
       } else {
         throw new ParsingError(input, index, "No right operand for <");
@@ -322,6 +340,7 @@ export const parse = function (input: string, graceful = false): Ast {
             type: "OpNE",
             left,
             right,
+            _isClosed: getOpIsClosed(),
           };
         } else {
           throw new ParsingError(input, index, "No right operand for !=");
@@ -337,6 +356,7 @@ export const parse = function (input: string, graceful = false): Ast {
             type: "OpEQ",
             left,
             right,
+            _isClosed: getOpIsClosed(),
           };
         } else {
           throw new ParsingError(input, index, "No right operand for ==");
@@ -353,6 +373,7 @@ export const parse = function (input: string, graceful = false): Ast {
             type: "OpMatches",
             left,
             right,
+            _isClosed: getOpIsClosed(),
           };
         } else {
           throw new ParsingError(
@@ -367,6 +388,7 @@ export const parse = function (input: string, graceful = false): Ast {
             type: "OpBetween",
             left,
             right,
+            _isClosed: getOpIsClosed(),
           };
         } else {
           throw new ParsingError(
@@ -411,6 +433,7 @@ export const parse = function (input: string, graceful = false): Ast {
           type: "OpPlus",
           left,
           right,
+          _isClosed: getOpIsClosed(),
         };
         return left;
       } else if (utils.char("-")) {
@@ -423,6 +446,7 @@ export const parse = function (input: string, graceful = false): Ast {
           type: "OpMinus",
           left,
           right,
+          _isClosed: getOpIsClosed(),
         };
         return left;
       } else {
@@ -450,6 +474,7 @@ export const parse = function (input: string, graceful = false): Ast {
             type: "OpMultiply",
             left,
             right,
+            _isClosed: getOpIsClosed(),
           };
           return left;
         }
@@ -464,6 +489,7 @@ export const parse = function (input: string, graceful = false): Ast {
             type: "OpDivide",
             left,
             right,
+            _isClosed: getOpIsClosed(),
           };
           return left;
         }
@@ -478,6 +504,7 @@ export const parse = function (input: string, graceful = false): Ast {
             type: "OpModulus",
             left,
             right,
+            _isClosed: getOpIsClosed(),
           };
           return left;
         }
@@ -499,6 +526,7 @@ export const parse = function (input: string, graceful = false): Ast {
         type: "OpPower",
         base: left,
         expression: right,
+        _isClosed: getOpIsClosed(),
       };
     } else {
       index = backtrack;

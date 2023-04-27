@@ -12,6 +12,7 @@ it("should gracefully parse with missing right operand", () => {
       value: 1,
     },
     right: null,
+    _isClosed: false,
   });
 });
 
@@ -83,6 +84,7 @@ it("should gracefully parse unclosed string literals", () => {
       value: "abc",
       __unclosed: true,
     },
+    _isClosed: false,
   });
 });
 
@@ -134,6 +136,96 @@ it("should gracefully unclosed Inline Lists and Maps", () => {
       },
     ],
     __unclosed: true,
+  });
+});
+it("should indicate if a boolean operator is closed or open if graceful", () => {
+  const left = {
+    type: "PropertyReference",
+    propertyName: "a",
+    nullSafeNavigation: false,
+  } as const;
+  const right = {
+    type: "PropertyReference",
+    propertyName: "b",
+    nullSafeNavigation: false,
+  } as const;
+
+  expect(parse(`a ^ b`, true)).toEqual<Ast>({
+    type: "OpPower",
+    base: left,
+    expression: right,
+    _isClosed: false,
+  });
+  expect(parse(`(a ^ b)`, true)).toEqual<Ast>({
+    type: "OpPower",
+    base: left,
+    expression: right,
+    _isClosed: true,
+  });
+
+  expect(parse(`a ? b : b`, true)).toEqual<Ast>({
+    type: "Ternary",
+    expression: left,
+    ifFalse: right,
+    ifTrue: right,
+    _isClosed: false,
+  });
+  expect(parse(`(a ? b : b)`, true)).toEqual<Ast>({
+    type: "Ternary",
+    expression: left,
+    ifFalse: right,
+    ifTrue: right,
+    _isClosed: true,
+  });
+
+  expect(parse(`a ?: b`, true)).toEqual<Ast>({
+    type: "Elvis",
+    expression: left,
+    ifFalse: right,
+    _isClosed: false,
+  });
+  expect(parse(`(a ?: b)`, true)).toEqual<Ast>({
+    type: "Elvis",
+    expression: left,
+    ifFalse: right,
+    _isClosed: true,
+  });
+
+  /**
+   * TODO: do this now for Ternary and Elvis
+   */
+
+  const operators = [
+    ["||", "OpOr"],
+    ["+", "OpPlus"],
+    ["-", "OpMinus"],
+    ["!=", "OpNE"],
+    ["*", "OpMultiply"],
+    ["/", "OpDivide"],
+    ["%", "OpModulus"],
+    ["matches", "OpMatches"],
+    ["between", "OpBetween"],
+    ["<", "OpLT"],
+    ["<=", "OpLE"],
+    [">", "OpGT"],
+    [">=", "OpGE"],
+    ["==", "OpEQ"],
+    ["&&", "OpAnd"],
+  ] as const;
+  operators.forEach(([opStr, type]) => {
+    expect(parse(`a ${opStr} b`, true)).toEqual<Ast>({
+      type,
+      left,
+      right,
+      _isClosed: false,
+    });
+
+    expect(parse(`(a ${opStr} b)`, true)).toEqual<Ast>({
+      type,
+      left,
+      right,
+      _isClosed: true,
+    });
   });
 });
 it("should gracefully unclosed Inline Maps", () => {

@@ -9,6 +9,7 @@ export type Ast =
       expression: Ast;
       ifTrue: Ast;
       ifFalse: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "VariableReference";
@@ -47,16 +48,19 @@ export type Ast =
       type: "OpPower";
       base: Ast;
       expression: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpPlus";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpOr";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpNot";
@@ -66,66 +70,79 @@ export type Ast =
       type: "OpNE";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpMultiply";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpModulus";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpMinus";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpMatches";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpBetween";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpLT";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpLE";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpGT";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpGE";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpEQ";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpDivide";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "OpAnd";
       left: Ast;
       right: Ast;
+      _isClosed?: boolean;
     }
   | {
       type: "Negative";
@@ -174,6 +191,7 @@ export type Ast =
       type: "Elvis";
       expression: Ast;
       ifFalse: Ast;
+      _isClosed?: boolean;
     }
   | {
       // Represents a dot-separated expression sequence, such as 'property1.property2.methodOne()'
