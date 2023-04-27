@@ -62,7 +62,7 @@ export const getEvaluator = (
       return maybeFromUndefined(functionsAndVariables[variableName]);
     }
   };
-  const getPropertyValueInContext = (variable: string): Maybe => {
+  const searchForPropertyValueInContextStack = (variable: string): Maybe => {
     return [...stack].reverse().reduce<Maybe>((prev, curr) => {
       if (isSome(prev)) {
         return prev;
@@ -144,13 +144,18 @@ export const getEvaluator = (
     });
     return typeof result === "undefined" ? null : result;
   };
-  const evaluate = (ast: Ast): unknown => {
+  const evaluate = (
+    ast: Ast,
+    isCompound = false,
+    isFirstInCompound = false
+  ): unknown => {
     switch (ast.type) {
       case "BooleanLiteral":
         return ast.value;
       case "CompoundExpression": {
-        const res = ast.expressionComponents.reduce((_, curr) => {
-          const res = evaluate(curr);
+        const res = ast.expressionComponents.reduce((_, curr, i) => {
+          const isFirst = i === 0;
+          const res = evaluate(curr, true, isFirst);
           stack.push(res);
           return res;
         }, rootContext);
@@ -171,7 +176,7 @@ export const getEvaluator = (
         const maybeProvidedFunction = getValueInProvidedFuncsAndVars(
           ast.functionName
         );
-        const evaluatedArguments = ast.args.map(evaluate);
+        const evaluatedArguments = ast.args.map((arg) => evaluate(arg));
         if (isNone(maybeProvidedFunction)) {
           if (!ast.nullSafeNavigation) {
             throw new Error("Function " + ast.functionName + " not found.");
@@ -237,7 +242,7 @@ export const getEvaluator = (
         );
       }
       case "InlineList": {
-        return ast.elements.map(evaluate);
+        return ast.elements.map((el) => evaluate(el));
       }
       case "InlineMap": {
         return Object.entries(ast.elements).reduce((prev, [k, v]) => {
@@ -280,7 +285,7 @@ export const getEvaluator = (
         const head = getHead();
         const valueInTopContext = head?.[ast.methodName];
         if (valueInTopContext) {
-          const evaluatedArguments = ast.args.map(evaluate); // <- arguments are evaluated lazily
+          const evaluatedArguments = ast.args.map((arg) => evaluate(arg)); // <- arguments are evaluated lazily
           if (typeof valueInTopContext === "function") {
             const boundFn = valueInTopContext.bind(head);
             return boundFn(...evaluatedArguments);
@@ -460,8 +465,25 @@ export const getEvaluator = (
       }
       case "PropertyReference": {
         const { nullSafeNavigation, propertyName } = ast;
+        if (isCompound && !isFirstInCompound) {
+          // we can only get the head.
+          const head = getHead();
+          if (typeof head[propertyName] === "undefined") {
+            if (nullSafeNavigation) {
+              return null;
+            }
+            throw new Error(
+              "Null Pointer Exception: Property " +
+                JSON.stringify(propertyName) +
+                " not found in head (last position)" +
+                " of context " +
+                JSON.stringify(stack)
+            );
+          }
+          return head[propertyName];
+        }
         const valueInContext: Maybe<unknown> =
-          getPropertyValueInContext(propertyName);
+          searchForPropertyValueInContextStack(propertyName);
         if (isNone(valueInContext)) {
           if (nullSafeNavigation) {
             return null;
@@ -608,5 +630,5 @@ export const getEvaluator = (
       }
     }
   };
-  return evaluate;
+  return (ast: Ast) => evaluate(ast);
 };

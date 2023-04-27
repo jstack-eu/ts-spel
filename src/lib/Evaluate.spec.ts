@@ -378,4 +378,35 @@ describe("Evaluation", () => {
       1,
     ]);
   });
+
+  it("Resolve properties in scope", () => {
+    const exp = `roles.![id][0] + ':' + id`;
+    const ast = parse(exp);
+    expect(
+      getEvaluator(
+        {
+          roles: [
+            {
+              id: "innerId",
+            },
+          ],
+          id: "outerId",
+        },
+        {}
+      )(ast)
+    ).toEqual("innerId:outerId");
+  });
+  it("Resolve chained properties correctly - NPE if not the right path", () => {
+    const exp = `obj.outer`;
+    const ast = parse(exp);
+    expect(() =>
+      getEvaluator(
+        {
+          obj: {},
+          outer: "outer",
+        },
+        {}
+      )(ast)
+    ).toThrow();
+  });
 });
