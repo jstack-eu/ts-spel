@@ -409,4 +409,9 @@ describe("Evaluation", () => {
       )(ast)
     ).toThrow();
   });
+  it("Return null when key not found in dict", () => {
+    const exp = `{:}["mykey"]`;
+    const ast = parse(exp);
+    expect(getEvaluator({}, {})(ast)).toBeNull();
+  });
 });

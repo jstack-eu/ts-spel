@@ -188,6 +188,12 @@ it("Inline Lists", () => {
     ],
   });
 });
+it("Empty Inline Map", () => {
+  expect(parse("{:}")).toEqual({
+    type: "InlineMap",
+    elements: {},
+  });
+});
 it("Inline Map", () => {
   expect(parse("{foo: 1 + 1, bar: 3 }")).toEqual({
     type: "InlineMap",

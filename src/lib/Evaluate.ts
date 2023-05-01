@@ -226,12 +226,7 @@ export const getEvaluator = (
           if (Object.prototype.hasOwnProperty.call(head, index)) {
             return head[index];
           } else {
-            throw new Error(
-              "key " +
-                index +
-                " not found in dictionary " +
-                JSON.stringify(head)
-            );
+            return null;
           }
         }
         throw new Error(

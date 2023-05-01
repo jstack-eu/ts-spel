@@ -1072,6 +1072,20 @@ export const parse = function (input: string, graceful = false): Ast {
         }
       }
       index = fnbacktrack;
+
+      // empty dict
+      if (
+        utils.whitSpc() &&
+        utils.char(":") &&
+        utils.whitSpc() &&
+        utils.char("}")
+      ) {
+        return {
+          type: "InlineMap",
+          elements: {},
+        };
+      }
+      index = fnbacktrack;
       // look for dictionary key/value pairs
       if (
         utils.zeroOrMore(() => {
