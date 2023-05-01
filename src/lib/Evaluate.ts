@@ -46,13 +46,28 @@ export const getEvaluator = (
   options?: EvalOptions
 ) => {
   const disableBoolOpChecks = options?.disableBoolOpChecks ?? false;
-  const stack: unknown[] = [rootContext]; // <- could be a class.
+  let stack: unknown[] = [rootContext]; // <- could be a class.
   const getHead = () => {
     if (stack.length > 0) {
       return stack[stack.length - 1];
     }
     throw new UnexpectedError("Stack is empty");
   };
+  /**
+   * see test for foo.identity(#this.a)
+   * (we want the outer #this, not foo.a)
+   * to do so, we need to keep track of #this, outside of our current head (onto which the property 'foo' has been pushed)
+   */
+  const ixOfThisBeforeCompoundOpened = (() => {
+    const _ix: number[] = [];
+    return {
+      pushCurrent: () => _ix.push(stack.length - 1),
+      get: () => _ix[_ix.length - 1] ?? null,
+      pop: () => _ix.pop(),
+      hasSome: () => _ix.length > 0,
+    };
+  })();
+
   const getValueInProvidedFuncsAndVars = (variableName: string): Maybe => {
     if (variableName === "this") {
       return some(getHead());
@@ -153,6 +168,7 @@ export const getEvaluator = (
       case "BooleanLiteral":
         return ast.value;
       case "CompoundExpression": {
+        ixOfThisBeforeCompoundOpened.pushCurrent();
         const res = ast.expressionComponents.reduce((_, curr, i) => {
           const isFirst = i === 0;
           const res = evaluate(curr, true, isFirst);
@@ -162,6 +178,7 @@ export const getEvaluator = (
         ast.expressionComponents.forEach(() => {
           stack.pop();
         });
+        ixOfThisBeforeCompoundOpened.pop();
         return res;
       }
       case "Elvis": {
@@ -246,6 +263,20 @@ export const getEvaluator = (
         }, {});
       }
       case "MethodReference": {
+        const evaluateArg = (arg: Ast) => {
+          if (!ixOfThisBeforeCompoundOpened.hasSome()) {
+            return evaluate(arg);
+          }
+          // store the old stack, so we can put it back
+          const storedStack = stack;
+          // Now set a stack so #this points outside the head of our current compound expression
+          stack = stack.slice(0, ixOfThisBeforeCompoundOpened.get() + 1);
+          // evaluate with temporary stack
+          const result = evaluate(arg);
+          // put the stack back.
+          stack = storedStack;
+          return result;
+        };
         if (ast.methodName === "length") {
           const currentContext = getHead();
           if (typeof currentContext === "string") {
@@ -255,7 +286,7 @@ export const getEvaluator = (
         if (ast.methodName === "matches") {
           const currentContext = getHead();
           if (typeof currentContext === "string") {
-            const rx = evaluate(ast.args[0]);
+            const rx = evaluateArg(ast.args[0]);
             if (typeof rx !== "string") {
               throw new Error(
                 "Cannot call 'string.matches()' with argument of type " +
@@ -274,13 +305,13 @@ export const getEvaluator = (
         if (ast.methodName === "contains") {
           const currentContext = getHead();
           if (Array.isArray(currentContext)) {
-            return currentContext.includes(evaluate(ast.args[0]));
+            return currentContext.includes(evaluateArg(ast.args[0]));
           }
         }
         const head = getHead();
         const valueInTopContext = head?.[ast.methodName];
         if (valueInTopContext) {
-          const evaluatedArguments = ast.args.map((arg) => evaluate(arg)); // <- arguments are evaluated lazily
+          const evaluatedArguments = ast.args.map((arg) => evaluateArg(arg)); // <- arguments are evaluated lazily
           if (typeof valueInTopContext === "function") {
             const boundFn = valueInTopContext.bind(head);
             return boundFn(...evaluatedArguments);

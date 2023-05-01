@@ -414,4 +414,61 @@ describe("Evaluation", () => {
     const ast = parse(exp);
     expect(getEvaluator({}, {})(ast)).toBeNull();
   });
+
+  it("Fix this for method calls in compounds.", () => {
+    const exp = `foo.identity(#this.a)`;
+    const ast = parse(exp);
+    expect(
+      getEvaluator(
+        {
+          a: "outerA",
+          foo: {
+            a: "innerA",
+            identity: (identity) => identity,
+          },
+        },
+        {}
+      )(ast)
+    ).toEqual("outerA");
+  });
+
+  it("Fix this for method calls in compounds - make sure we use a stack to keep track multiple outer #this, so we don't lose them", () => {
+    const exp = `
+    foo.box({
+      a: #this.a.transform(#this.value),
+      b: {{ a: foo.a }}.![ #this.a.transform(#this.a.value)][0],
+      c: #this.a.transform(#this.value),
+    }).add("d",  #this.a.transform(#this.value))
+    `;
+    const ast = parse(exp);
+    expect(
+      getEvaluator(
+        {
+          value: 11,
+          a: {
+            value: 55,
+            _id: "outer",
+            transform: (value) => value * 2,
+          },
+          foo: {
+            a: {
+              value: 55,
+              _id: "inner",
+              transform: (value) => value + 0.5,
+            },
+            box: (value) => {
+              let v = { ...value };
+              return {
+                add(key: string, _v) {
+                  v[key] = _v;
+                  return v;
+                },
+              };
+            },
+          },
+        },
+        {}
+      )(ast)
+    ).toEqual({ a: 22, b: 55.5, c: 22, d: 22 });
+  });
 });
