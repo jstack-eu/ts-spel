@@ -312,4 +312,41 @@ it("should gracefully parse an unclosed map inside an unclosed list", () => {
       },
     ],
   });
+
+  expect(parse("{{ f: d", true)).toEqual<Ast>({
+    type: "InlineList",
+    __unclosed: true,
+    elements: [
+      {
+        type: "InlineMap",
+        __unclosed: true,
+        elements: {
+          f: {
+            type: "PropertyReference",
+            nullSafeNavigation: false,
+            propertyName: "d",
+          },
+        },
+      },
+    ],
+  });
+
+  expect(parse("{{ f: d, ", true)).toEqual<Ast>({
+    type: "InlineList",
+    __unclosed: true,
+    elements: [
+      {
+        type: "InlineMap",
+        __unclosed: true,
+        elements: {
+          f: {
+            type: "PropertyReference",
+            nullSafeNavigation: false,
+            propertyName: "d",
+          },
+          "": null as any,
+        },
+      },
+    ],
+  });
 });

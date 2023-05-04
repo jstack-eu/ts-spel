@@ -1098,19 +1098,22 @@ export const parse = function (input: string, graceful = false): Ast {
       }
       index = fnbacktrack;
       // look for dictionary key/value pairs
+      let wasComma = false;
       if (
         utils.zeroOrMore(() => {
           utils.whitSpc();
           let ident: string | null;
           let elem: Ast | null;
-          if (
-            (ident = utils.identifier()) &&
-            utils.char(":") &&
-            ((elem = expression()) || graceful)
-          ) {
-            dict[ident] = elem;
-            utils.char(",");
-            return elem;
+          if ((ident = utils.identifier())) {
+            if (utils.char(":") && ((elem = expression()) || graceful)) {
+              dict[ident] = elem;
+              wasComma = Boolean(utils.char(","));
+              return elem;
+            }
+          } else if (wasComma && graceful) {
+            // we ended on a ','
+            dict[""] = null;
+            return null;
           }
           return null;
         }) &&
