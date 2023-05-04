@@ -399,12 +399,14 @@ export const parse = function (input: string, graceful = false): Ast {
         }
       } else {
         if (keyword && !["and", "or"].includes(keyword?.toLowerCase())) {
-          throw new ParsingError(
-            input,
-            index,
-            "Not an Operator",
-            `"${keyword}" is not an operator`
-          );
+          if (!graceful) {
+            throw new ParsingError(
+              input,
+              index,
+              "Not an Operator",
+              `"${keyword}" is not an operator`
+            );
+          }
         }
         index = backtrack;
       }
@@ -1049,6 +1051,15 @@ export const parse = function (input: string, graceful = false): Ast {
         utils.zeroOrMore(() => {
           const elem = expression();
           if (elem) {
+            // backtrack early if we hit a color: we're in a map
+            // so don't push the item onto listElements
+            const storeIx = index;
+            const foundColon = utils.char(":");
+            if (foundColon) {
+              index = storeIx;
+              return null;
+            }
+
             listElements.push(elem);
             utils.char(",");
             utils.whitSpc();
@@ -1095,7 +1106,7 @@ export const parse = function (input: string, graceful = false): Ast {
           if (
             (ident = utils.identifier()) &&
             utils.char(":") &&
-            (elem = expression())
+            ((elem = expression()) || graceful)
           ) {
             dict[ident] = elem;
             utils.char(",");

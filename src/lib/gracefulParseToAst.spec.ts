@@ -297,3 +297,19 @@ it("should gracefully unclosed Inline Maps", () => {
     ],
   });
 });
+
+it("should gracefully parse an unclosed map inside an unclosed list", () => {
+  expect(parse("{{ f: ", true)).toEqual<Ast>({
+    type: "InlineList",
+    __unclosed: true,
+    elements: [
+      {
+        type: "InlineMap",
+        __unclosed: true,
+        elements: {
+          f: null as any as Ast,
+        },
+      },
+    ],
+  });
+});
