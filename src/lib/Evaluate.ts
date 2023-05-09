@@ -38,6 +38,7 @@ const maybeFromUndefined = (value: unknown) => {
 
 export type EvalOptions = {
   disableBoolOpChecks?: true;
+  disableNullPointerExceptions?: true;
 };
 
 export const getEvaluator = (
@@ -46,6 +47,8 @@ export const getEvaluator = (
   options?: EvalOptions
 ) => {
   const disableBoolOpChecks = options?.disableBoolOpChecks ?? false;
+  const disableNullPointerExceptions =
+    options?.disableNullPointerExceptions ?? false;
   let stack: unknown[] = [rootContext]; // <- could be a class.
   const getHead = () => {
     if (stack.length > 0) {
@@ -498,6 +501,9 @@ export const getEvaluator = (
             if (nullSafeNavigation) {
               return null;
             }
+            if (disableNullPointerExceptions) {
+              return null;
+            }
             throw new Error(
               "Null Pointer Exception: Property " +
                 JSON.stringify(propertyName) +
@@ -512,6 +518,9 @@ export const getEvaluator = (
           searchForPropertyValueInContextStack(propertyName);
         if (isNone(valueInContext)) {
           if (nullSafeNavigation) {
+            return null;
+          }
+          if (disableNullPointerExceptions) {
             return null;
           }
           throw new Error(
@@ -646,6 +655,9 @@ export const getEvaluator = (
           ast.variableName
         );
         if (isNone(valueInFuncsAndVars)) {
+          if (disableNullPointerExceptions) {
+            return null;
+          }
           throw new Error(
             "Null Pointer Exception: variable " +
               JSON.stringify(ast.variableName) +

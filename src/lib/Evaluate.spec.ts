@@ -409,6 +409,18 @@ describe("Evaluation", () => {
       )(ast)
     ).toThrow();
   });
+  it("NPE by default", () => {
+    const exp = `foo`;
+    const ast = parse(exp);
+    expect(() => getEvaluator({}, {})(ast)).toThrow();
+  });
+  it("evaluate to null instead of NPE if 'disableNullPointerExceptions' set", () => {
+    const exp = `foo`;
+    const ast = parse(exp);
+    expect(
+      getEvaluator({}, {}, { disableNullPointerExceptions: true })(ast)
+    ).toBeNull();
+  });
   it("Return null when key not found in dict", () => {
     const exp = `{:}["mykey"]`;
     const ast = parse(exp);
