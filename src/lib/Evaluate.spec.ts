@@ -483,4 +483,33 @@ describe("Evaluation", () => {
       )(ast)
     ).toEqual({ a: 22, b: 55.5, c: 22, d: 22 });
   });
+
+  it("real example: Make sure properties inside of indexes are looked up properly from the outer scope (not the current compound chain)", () => {
+    const ast = parse(`(
+      investigation?.travel?.inStateItems != null &&
+      investigation?.travel?.inStateItems.?[#this.departureDate != null]?.size() > 0 ?
+          investigation?.travel?.inStateItems?.![
+          #this.departureDate
+          ][investigation?.travel?.inStateItems.size() - 1]
+      : null
+       
+      )`);
+    expect(
+      getEvaluator(
+        {
+          investigation: {
+            travel: {
+              inStateItems: [
+                {
+                  departureDate: "2023-05-24",
+                },
+              ],
+              investigation: "ac110003-8836-1ef1-8188-4b22eb5e315c",
+            },
+          },
+        },
+        {}
+      )(ast)
+    ).toEqual("2023-05-24");
+  });
 });

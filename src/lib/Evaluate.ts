@@ -217,7 +217,26 @@ export const getEvaluator = (
         if (head === null && ast.nullSafeNavigation) {
           return null;
         }
-        const index = evaluate(ast.index);
+        const index = ixOfThisBeforeCompoundOpened.hasSome()
+          ? (() => {
+              /**
+               * when a property is used in an index, it's looking backwards through the stack we built up _for the compound_, not the stack _outside the current compound_
+               * To do this properly, we need to track the stack _outside the current compound (of which [ ] is a part in the chain).
+               * This index, which tracks the stack _outside_ the current compound, is 'ixOfThisBeforeCompoundOpened'
+               *
+               */
+
+              // store the old stack, so we can put it back
+              const storedStack = stack;
+              // Now set a stack so #this points outside the head of our current compound expression
+              stack = stack.slice(0, ixOfThisBeforeCompoundOpened.get() + 1);
+              // evaluate with temporary stack
+              const result = evaluate(ast.index);
+              // put the stack back.
+              stack = storedStack;
+              return result;
+            })()
+          : evaluate(ast.index);
         if (typeof head === "string" && typeof index === "number") {
           if (index >= 0 && index < head.length) {
             return head[index];
@@ -514,8 +533,10 @@ export const getEvaluator = (
           }
           return head[propertyName];
         }
+
         const valueInContext: Maybe<unknown> =
           searchForPropertyValueInContextStack(propertyName);
+
         if (isNone(valueInContext)) {
           if (nullSafeNavigation) {
             return null;
