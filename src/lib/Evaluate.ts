@@ -516,8 +516,21 @@ export const getEvaluator = (
         if (isCompound && !isFirstInCompound) {
           // we can only get the head.
           const head = getHead();
+          if (head === null || typeof head === "undefined") {
+            if (nullSafeNavigation) {
+              return null;
+            }
+            throw new Error(
+              `Cannot chain property "${propertyName}" off of ${
+                head === null ? "null" : "undefined"
+              }`
+            );
+          }
           if (typeof head[propertyName] === "undefined") {
             if (nullSafeNavigation) {
+              // This doesn't seem right at first, but it actually works like that.
+              // we can do ?.nonexistantproperty
+              // and it will return null.
               return null;
             }
             if (disableNullPointerExceptions) {

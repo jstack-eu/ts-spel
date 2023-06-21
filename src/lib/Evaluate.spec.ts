@@ -512,4 +512,15 @@ describe("Evaluation", () => {
       )(ast)
     ).toEqual("2023-05-24");
   });
+  it("null chaining off function return value", () => {
+    const ast = parse(`foo()?.bar`);
+    expect(
+      getEvaluator(
+        {
+          foo: () => null,
+        },
+        {}
+      )(ast)
+    ).toEqual(null);
+  });
 });
