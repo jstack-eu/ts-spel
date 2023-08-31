@@ -27,7 +27,6 @@ describe("Evaluation", () => {
   it("should evaluate negation", () => {
     expect(getEvaluator({}, {})(parse("2^-(2*-2)+-5"))).toBe(11);
   });
-
   it("Can index into arrays", () => {
     const r = parse("{1, 2, {3, 4}}[2][0]");
     expect(getEvaluator({}, {})(r)).toBe(3);
@@ -522,5 +521,21 @@ describe("Evaluation", () => {
         {}
       )(ast)
     ).toEqual(null);
+  });
+  it("Should compare string values <", () => {
+    const ast = parse(`"a" < "b"`);
+    expect(getEvaluator({}, {})(ast)).toEqual(true);
+  });
+  it("Should compare string values <=", () => {
+    const ast = parse(`"a" <= "b" && "a" <= "a"`);
+    expect(getEvaluator({}, {})(ast)).toEqual(true);
+  });
+  it("Should compare string values >", () => {
+    const ast = parse(`"b" > "a"`);
+    expect(getEvaluator({}, {})(ast)).toEqual(true);
+  });
+  it("Should compare string values >=", () => {
+    const ast = parse(`"b" >= "a" && "b" >= "b"`);
+    expect(getEvaluator({}, {})(ast)).toEqual(true);
   });
 });

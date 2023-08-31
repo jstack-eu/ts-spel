@@ -382,15 +382,39 @@ export const getEvaluator = (
         return left === right;
       }
       case "OpGE": {
+        if (
+          ast.left.type === "StringLiteral" &&
+          ast.right.type === "StringLiteral"
+        ) {
+          return binStringOp((a, b) => a >= b)(ast.left, ast.right);
+        }
         return binFloatOp((a, b) => a >= b, true)(ast.left, ast.right);
       }
       case "OpGT": {
+        if (
+          ast.left.type === "StringLiteral" &&
+          ast.right.type === "StringLiteral"
+        ) {
+          return binStringOp((a, b) => a > b)(ast.left, ast.right);
+        }
         return binFloatOp((a, b) => a > b, true)(ast.left, ast.right);
       }
       case "OpLE": {
+        if (
+          ast.left.type === "StringLiteral" &&
+          ast.right.type === "StringLiteral"
+        ) {
+          return binStringOp((a, b) => a <= b)(ast.left, ast.right);
+        }
         return binFloatOp((a, b) => a <= b, true)(ast.left, ast.right);
       }
       case "OpLT": {
+        if (
+          ast.left.type === "StringLiteral" &&
+          ast.right.type === "StringLiteral"
+        ) {
+          return binStringOp((a, b) => a < b)(ast.left, ast.right);
+        }
         return binFloatOp((a, b) => a < b, true)(ast.left, ast.right);
       }
       case "OpMatches": {
