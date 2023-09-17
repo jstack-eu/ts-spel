@@ -56,7 +56,7 @@ const prettyPrint = (ast: Ast) => {
           case "SelectionLast":
           case "Projection":
             const { nullSafeNavigation } = curr;
-            const nav = nullSafeNavigation ? "?." : ".";
+            const nav = !prev ? "" : nullSafeNavigation ? "?." : ".";
             return `${prev}${nav}${prettyPrint(curr)}`;
           default:
             return `${prev}${prettyPrint(curr)}`;
