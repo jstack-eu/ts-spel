@@ -36,7 +36,7 @@ const getOrder = (ast: Ast): number => {
 };
 
 const needsParen = (parent: Ast, child: Ast) => {
-  return getOrder(parent) > getOrder(child);
+  return getOrder(parent) >= getOrder(child);
 };
 
 const prettyPrint = (ast: Ast) => {
