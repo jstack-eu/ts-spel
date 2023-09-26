@@ -780,3 +780,15 @@ it('Parsing:  foo() && arr?[0] > 0 || "fooc" ? arr?.![#this + 1] : null ', () =>
     },
   });
 });
+
+it("Parsing:  Object with quoted keys ", () => {
+  expect(parse(`{"9ego": 1}`)).toEqual({
+    elements: {
+      "9ego": {
+        type: "NumberLiteral",
+        value: 1,
+      },
+    },
+    type: "InlineMap",
+  });
+});

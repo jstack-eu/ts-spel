@@ -972,30 +972,32 @@ export const parse = function (input: string, graceful = false): Ast {
     }
     return null;
   };
+
+  const string = (): (Ast & { type: "StringLiteral" }) | null => {
+    const stringLiteral = utils.stringLiteral();
+    if (typeof stringLiteral === "string") {
+      log("returning stringLiteral", stringLiteral);
+      return {
+        type: "StringLiteral",
+        value: stringLiteral,
+      };
+    }
+    if (stringLiteral === -1) {
+      // it's unclosed, so let's just capture the rest
+      const value = input.slice(index).trim().slice(1);
+      index = input.length;
+      return {
+        type: "StringLiteral",
+        value,
+        __unclosed: true,
+      };
+    }
+    return null;
+  };
   const literal = function (): Ast | null {
     log("literal");
     return utils.firstOf(
-      () => {
-        const stringLiteral = utils.stringLiteral();
-        if (typeof stringLiteral === "string") {
-          log("returning stringLiteral", stringLiteral);
-          return {
-            type: "StringLiteral",
-            value: stringLiteral,
-          };
-        }
-        if (stringLiteral === -1) {
-          // it's unclosed, so let's just capture the rest
-          const value = input.slice(index).trim().slice(1);
-          index = input.length;
-          return {
-            type: "StringLiteral",
-            value,
-            __unclosed: true,
-          };
-        }
-        return null;
-      },
+      string,
       number,
       () =>
         utils.regExp(/true/i) && {
@@ -1103,8 +1105,26 @@ export const parse = function (input: string, graceful = false): Ast {
         utils.zeroOrMore(() => {
           utils.whitSpc();
           let ident: string | null;
+          let identInQuotes: (Ast & { type: "StringLiteral" }) | null;
           let elem: Ast | null;
-          if ((ident = utils.identifier())) {
+          if (
+            (ident =
+              utils.identifier() ||
+              (() => {
+                const identInQuotes = string();
+                if (!identInQuotes) {
+                  return null;
+                }
+                if (identInQuotes.__unclosed) {
+                  throw new ParsingError(
+                    input,
+                    index,
+                    "Non-terminating quoted string"
+                  );
+                }
+                return identInQuotes.value;
+              })())
+          ) {
             if (utils.char(":") && ((elem = expression()) || graceful)) {
               dict[ident] = elem;
               wasComma = Boolean(utils.char(","));
@@ -1160,7 +1180,12 @@ export const parse = function (input: string, graceful = false): Ast {
 
   const result = expression();
   if (index !== input.length && !graceful) {
-    throw new ParsingError(input, index, "Expression Remaining");
+    throw new ParsingError(
+      input,
+      index,
+      "Expression Remaining",
+      `input remaining: ${input.slice(index)}`
+    );
   }
   if (result === null && !graceful) {
     throw new ParsingError(input, index, "Generic");
