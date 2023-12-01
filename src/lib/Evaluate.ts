@@ -1,6 +1,18 @@
 import { Ast } from "./Ast";
 import { UnexpectedError } from "./CustomErrors";
 import { compile as compileRegex } from "java-regex-js";
+import JSOG from "jsog";
+
+const stringify = (obj: unknown) => {
+  try {
+    return JSON.stringify(obj);
+  } catch (e) {
+    if (e.message.startsWith("Converting circular structure to JSON")) {
+      return JSON.stringify(JSON.parse(JSOG.stringify(obj)), null, 2);
+    }
+    throw e;
+  }
+};
 
 type Some<R = unknown> = {
   _tag: "some";
@@ -115,13 +127,13 @@ export const getEvaluator = (
         typeof left !== "number" &&
         !(allowNull && (left === null || typeof left === "undefined"))
       ) {
-        throw new Error(JSON.stringify(left) + " is not a float");
+        throw new Error(stringify(left) + " is not a float");
       }
       if (
         typeof right !== "number" &&
         !(allowNull && (right === null || typeof right === "undefined"))
       ) {
-        throw new Error(JSON.stringify(right) + " is not a float");
+        throw new Error(stringify(right) + " is not a float");
       }
       return op(
         (left ?? null) as number | null,
@@ -135,10 +147,10 @@ export const getEvaluator = (
       const left = evaluate(_left);
       const right = evaluate(_right);
       if (typeof left !== "string") {
-        throw new Error(JSON.stringify(left) + " is not a string");
+        throw new Error(stringify(left) + " is not a string");
       }
       if (typeof right !== "string") {
-        throw new Error(JSON.stringify(right) + " is not a string");
+        throw new Error(stringify(right) + " is not a string");
       }
       return op(left, right);
     };
@@ -242,20 +254,14 @@ export const getEvaluator = (
             return head[index];
           }
           throw new Error(
-            "index " +
-              index +
-              " is out of range on string " +
-              JSON.stringify(head)
+            "index " + index + " is out of range on string " + stringify(head)
           );
         } else if (Array.isArray(head) && typeof index === "number") {
           if (index >= 0 && index < head.length) {
             return head[index];
           }
           throw new Error(
-            "index " +
-              index +
-              " is out of range on array " +
-              JSON.stringify(head)
+            "index " + index + " is out of range on array " + stringify(head)
           );
         } else if (
           head &&
@@ -270,9 +276,9 @@ export const getEvaluator = (
         }
         throw new Error(
           "Not supported: indexing into " +
-            JSON.stringify(head) +
+            stringify(head) +
             " with " +
-            JSON.stringify(index)
+            stringify(index)
         );
       }
       case "InlineList": {
@@ -286,9 +292,17 @@ export const getEvaluator = (
       }
       case "MethodReference": {
         const evaluateArg = (arg: Ast) => {
-          if (!ixOfThisBeforeCompoundOpened.hasSome()) {
+          if (
+            // no index of a currently opened compound expression has been found
+            !ixOfThisBeforeCompoundOpened.hasSome() ||
+            // it's just the method call (e.g. foo()) with nothing before it - the current head is actually what we want
+            // (this happens when a.![foo(curr)])
+            // - this check that we aren't in a currently opened compound chain prevents the head (a[0] for example) from being popped off.
+            !isCompound
+          ) {
             return evaluate(arg);
           }
+
           // store the old stack, so we can put it back
           const storedStack = stack;
           // Now set a stack so #this points outside the head of our current compound expression
@@ -348,9 +362,7 @@ export const getEvaluator = (
         if (typeof operand === "number") {
           return operand * -1;
         }
-        throw new Error(
-          "unary (-) operator applied to " + JSON.stringify(operand)
-        );
+        throw new Error("unary (-) operator applied to " + stringify(operand));
       }
       case "NullLiteral": {
         return null;
@@ -361,14 +373,14 @@ export const getEvaluator = (
       case "OpAnd": {
         const left = evaluate(ast.left);
         if (!disableBoolOpChecks && typeof left !== "boolean") {
-          throw new Error(JSON.stringify(left) + " is not a boolean");
+          throw new Error(stringify(left) + " is not a boolean");
         }
         if (!left) {
           return !!left;
         }
         const right = evaluate(ast.right);
         if (!disableBoolOpChecks && typeof right !== "boolean") {
-          throw new Error(JSON.stringify(right) + " is not a boolean");
+          throw new Error(stringify(right) + " is not a boolean");
         }
         return !!right;
       }
@@ -455,14 +467,14 @@ export const getEvaluator = (
         const left = evaluate(ast.left);
 
         if (!disableBoolOpChecks && typeof left !== "boolean") {
-          throw new Error(JSON.stringify(left) + " is not a boolean");
+          throw new Error(stringify(left) + " is not a boolean");
         }
         if (left) {
           return !!left;
         }
         const right = evaluate(ast.right);
         if (!disableBoolOpChecks && typeof right !== "boolean") {
-          throw new Error(JSON.stringify(right) + " is not a boolean");
+          throw new Error(stringify(right) + " is not a boolean");
         }
         return !!right;
       }
@@ -481,12 +493,10 @@ export const getEvaluator = (
           );
         };
         if (!isStringOrNumber(left)) {
-          throw new Error(JSON.stringify(left) + " is not a string or number.");
+          throw new Error(stringify(left) + " is not a string or number.");
         }
         if (!isStringOrNumber(right)) {
-          throw new Error(
-            JSON.stringify(right) + " is not a string or number."
-          );
+          throw new Error(stringify(right) + " is not a string or number.");
         }
         if (left === null && right === null) {
           throw new Error(
@@ -515,6 +525,7 @@ export const getEvaluator = (
         if (head === null && nullSafeNavigation) {
           return null;
         }
+
         if (Array.isArray(head)) {
           return head.map((v) => {
             stack.push(v);
@@ -532,7 +543,7 @@ export const getEvaluator = (
           });
         }
         throw new Error(
-          "Cannot run expression on non-array " + JSON.stringify(head)
+          "Cannot run expression on non-array " + stringify(head)
         );
       }
       case "PropertyReference": {
@@ -550,6 +561,7 @@ export const getEvaluator = (
               }`
             );
           }
+
           if (typeof head[propertyName] === "undefined") {
             if (nullSafeNavigation) {
               // This doesn't seem right at first, but it actually works like that.
@@ -562,10 +574,10 @@ export const getEvaluator = (
             }
             throw new Error(
               "Null Pointer Exception: Property " +
-                JSON.stringify(propertyName) +
+                stringify(propertyName) +
                 " not found in head (last position)" +
                 " of context " +
-                JSON.stringify(stack)
+                stringify(stack)
             );
           }
           return head[propertyName];
@@ -573,7 +585,6 @@ export const getEvaluator = (
 
         const valueInContext: Maybe<unknown> =
           searchForPropertyValueInContextStack(propertyName);
-
         if (isNone(valueInContext)) {
           if (nullSafeNavigation) {
             return null;
@@ -583,9 +594,9 @@ export const getEvaluator = (
           }
           throw new Error(
             "Null Pointer Exception: Property " +
-              JSON.stringify(propertyName) +
+              stringify(propertyName) +
               " not found in context " +
-              JSON.stringify(stack)
+              stringify(stack)
           );
         }
         return valueInContext.value;
@@ -607,7 +618,7 @@ export const getEvaluator = (
             if (typeof result !== "boolean") {
               throw new Error(
                 "Result " +
-                  JSON.stringify(result) +
+                  stringify(result) +
                   " at index " +
                   i +
                   " of selection expression is not Boolean"
@@ -629,7 +640,7 @@ export const getEvaluator = (
               if (typeof result !== "boolean") {
                 throw new Error(
                   "Result " +
-                    JSON.stringify(result) +
+                    stringify(result) +
                     " at index " +
                     i +
                     " of selection expression is not Boolean"
@@ -640,8 +651,7 @@ export const getEvaluator = (
           );
         }
         throw new Error(
-          "Cannot run selection expression on non-collection " +
-            JSON.stringify(head)
+          "Cannot run selection expression on non-collection " + stringify(head)
         );
       }
       case "SelectionFirst": {
@@ -663,7 +673,7 @@ export const getEvaluator = (
           return result && { [result.key]: result.value };
         }
         throw new Error(
-          "Cannot run selection expression on non-array " + JSON.stringify(head)
+          "Cannot run selection expression on non-array " + stringify(head)
         );
       }
       case "SelectionLast": {
@@ -685,7 +695,7 @@ export const getEvaluator = (
           return result && { [result.key]: result.value };
         }
         throw new Error(
-          "Cannot run selection expression on non-array " + JSON.stringify(head)
+          "Cannot run selection expression on non-array " + stringify(head)
         );
       }
       case "StringLiteral": {
@@ -704,7 +714,7 @@ export const getEvaluator = (
         } else {
           throw new Error(
             "Unexpected non boolean/null in Ternary conditional expression: " +
-              JSON.stringify(conditionResult)
+              stringify(conditionResult)
           );
         }
       }
@@ -718,7 +728,7 @@ export const getEvaluator = (
           }
           throw new Error(
             "Null Pointer Exception: variable " +
-              JSON.stringify(ast.variableName) +
+              stringify(ast.variableName) +
               " not found"
           );
         }

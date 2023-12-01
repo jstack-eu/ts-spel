@@ -24,7 +24,12 @@ it("only whitespace", () => {
 
 it("1 1", () => {
   const input = "1 1";
-  const expectedError = new ParsingError(input, 2, "Expression Remaining");
+  const expectedError = new ParsingError(
+    input,
+    2,
+    "Expression Remaining",
+    "input remaining: 1"
+  );
   assertError(input, expectedError);
 });
 
@@ -84,7 +89,12 @@ it("1 ||", () => {
 
 it("\\", () => {
   const input = "\\";
-  const expectedError = new ParsingError(input, 0, "Expression Remaining");
+  const expectedError = new ParsingError(
+    input,
+    0,
+    "Expression Remaining",
+    "input remaining: \\"
+  );
   assertError(input, expectedError);
 });
 

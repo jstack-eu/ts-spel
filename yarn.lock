@@ -3951,6 +3951,11 @@ jsesc@~0.5.0:
   resolved "https://registry.yarnpkg.com/jsesc/-/jsesc-0.5.0.tgz#e7dee66e35d6fc16f710fe91d5cf69f70f08911d"
   integrity sha512-uZz5UnB7u4T9LvwmFqXii7pZSouaRPorGs5who1Ip7VO0wxanFvBL7GkM6dTHlgX+jhBApRetaWpnDabOeTcnA==
 
+jsog@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/jsog/-/jsog-1.0.7.tgz#b99f7331674807a7aecb3eb16f8aefbded27fb22"
+  integrity sha512-9IA6ZY6g5rSgRTvHO7B4Ro9LGGqJEPXdKRkvPohmzdk777fldQ3rjbUkmiIG3gxswLi2ZiAKsdgqfs+zMwmRcg==
+
 json-parse-even-better-errors@^2.3.0, json-parse-even-better-errors@^2.3.1:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/json-parse-even-better-errors/-/json-parse-even-better-errors-2.3.1.tgz#7c47805a94319928e05777405dc12e1f7a4ee02d"

@@ -569,6 +569,7 @@ export const parse = function (input: string, graceful = false): Ast {
     log("after startNode got");
     const continuations: Ast[] = [];
     utils.zeroOrMore(() => {
+      utils.whitSpc();
       let nextNode: Ast | null = null;
       if ((nextNode = node())) {
         continuations.push(nextNode);
@@ -1179,6 +1180,7 @@ export const parse = function (input: string, graceful = false): Ast {
   };
 
   const result = expression();
+  utils.whitSpc();
   if (index !== input.length && !graceful) {
     throw new ParsingError(
       input,

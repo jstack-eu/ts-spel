@@ -538,4 +538,21 @@ describe("Evaluation", () => {
     const ast = parse(`"b" >= "a" && "b" >= "b"`);
     expect(getEvaluator({}, {})(ast)).toEqual(true);
   });
+
+  it("Should maintain correct context inside method calls inside projections", () => {
+    const ast = parse(`list.![fn(foo)][0]`);
+    expect(
+      getEvaluator(
+        {
+          list: [
+            {
+              fn: (value) => value,
+              foo: 1,
+            },
+          ],
+        },
+        {}
+      )(ast)
+    ).toEqual(1);
+  });
 });
