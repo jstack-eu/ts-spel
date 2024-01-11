@@ -30,7 +30,11 @@ const logFlag = false;
  * @returns AST representing input
  */
 
-export const parse = function (input: string, graceful = false): Ast {
+export const parse = function (
+  input: string,
+  graceful = false,
+  allowWeirdQuoteCharacters = false
+): Ast {
   let index = 0;
 
   const log = (...args) => {
@@ -113,7 +117,10 @@ export const parse = function (input: string, graceful = false): Ast {
       return utils.regExp(/^([a-zA-Z_$][a-zA-Z0-9_$]*)/);
     },
     stringLiteral: function (): string | null | -1 {
-      const match = _stringLiteral(input.slice(index));
+      const match = _stringLiteral(
+        input.slice(index),
+        allowWeirdQuoteCharacters
+      );
       if (match === -1) {
         if (graceful) {
           return -1;

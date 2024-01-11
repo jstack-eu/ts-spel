@@ -1,3 +1,4 @@
+import uniq from "lodash/uniq";
 /**
  * In SPEL, quote characters are escaped by repeating them a second time.
  * See tests.
@@ -6,23 +7,45 @@ const Q = {
   SINGLE_QUOTE: "'",
   DOUBLE_QUOTE: '"',
   TICK_QUOTE: "`",
+  LEFT_SINGLE_QUOTE: "‘",
+  RIGHT_SINGLE_QUOTE: "’",
+  LEFT_DOUBLE_QUOTE: "“",
+  RIGHT_DOUBLE_QUOTE: "”",
 };
-const isQuoteChar = (ch: string) => {
+const isQuoteChar = (ch: string, allowWeirdQuoteCharacters = false) => {
   switch (ch) {
     case Q.SINGLE_QUOTE:
     case Q.DOUBLE_QUOTE:
     case Q.TICK_QUOTE:
       return true;
+    case Q.LEFT_SINGLE_QUOTE:
+    case Q.RIGHT_SINGLE_QUOTE:
+    case Q.LEFT_DOUBLE_QUOTE:
+    case Q.RIGHT_DOUBLE_QUOTE:
+      return allowWeirdQuoteCharacters;
   }
   return false;
 };
 
+const getCorrespondingQuoteChar = (ch: string) => {
+  switch (ch) {
+    case Q.LEFT_SINGLE_QUOTE:
+      return Q.RIGHT_SINGLE_QUOTE;
+    case Q.LEFT_DOUBLE_QUOTE:
+      return Q.RIGHT_DOUBLE_QUOTE;
+    default:
+      return ch;
+  }
+};
 // returnValue[1] is the index remaining after a successful string match
 // -1 means unclosed string error
-const stringLiteral = (input: string): [string, number] | -1 | null => {
+const stringLiteral = (
+  input: string,
+  allowWeirdQuoteCharacters = false
+): [string, number] | -1 | null => {
   const getMaybeQuoteChar = (
-    ix: number,
-    matchingChar?: (typeof Q)[keyof typeof Q]
+    ix: number, // starting index
+    matchingChars: (typeof Q)[keyof typeof Q][]
   ): null | {
     char: string;
     length: number; // number of times it is repeated
@@ -30,7 +53,7 @@ const stringLiteral = (input: string): [string, number] | -1 | null => {
   } => {
     let scanIx = ix;
     const ch = input[scanIx];
-    if (matchingChar ? matchingChar === ch : isQuoteChar(ch)) {
+    if (matchingChars.includes(ch)) {
       while (input[++scanIx] === ch) {
         // continue
       }
@@ -51,13 +74,19 @@ const stringLiteral = (input: string): [string, number] | -1 | null => {
     return i;
   })();
   const firstNonWhitespaceChar = input[firstNonWhitespaceCharacterIx];
-  const maybeQuoteChar = isQuoteChar(firstNonWhitespaceChar)
+  const maybeQuoteChar = isQuoteChar(
+    firstNonWhitespaceChar,
+    allowWeirdQuoteCharacters
+  )
     ? firstNonWhitespaceChar
     : null;
   if (maybeQuoteChar) {
     /** find the next matching quote char */
     for (let i = firstNonWhitespaceCharacterIx + 1; i < input.length; ) {
-      const maybeClosingQuoteChar = getMaybeQuoteChar(i, maybeQuoteChar);
+      const maybeClosingQuoteChar = getMaybeQuoteChar(
+        i,
+        uniq([maybeQuoteChar, getCorrespondingQuoteChar(maybeQuoteChar)])
+      );
       if (!maybeClosingQuoteChar) {
         // continue
         i += 1;
@@ -71,7 +100,7 @@ const stringLiteral = (input: string): [string, number] | -1 | null => {
         );
         return [
           // now lets replace escaped quote characters
-          stringContents.split(maybeQuoteChar.repeat(2)).join(maybeQuoteChar),
+          stringContents.split(maybeQuoteChar.repeat(2)).join(maybeQuoteChar), // <- doesn't handle all combinations of pairs of curly left/right quotes. For now that's ok. Handling those is non-standard anyway.
           remainingIx,
         ];
       } else {
