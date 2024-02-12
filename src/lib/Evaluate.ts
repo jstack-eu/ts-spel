@@ -120,9 +120,7 @@ export const getEvaluator = (
     op: (a: number | null, b: number | null) => Out,
     allowNull = false
   ) {
-    return (_left: Ast, _right: Ast) => {
-      const left = evaluate(_left);
-      const right = evaluate(_right);
+    return (left: unknown, right: unknown) => {
       if (
         typeof left !== "number" &&
         !(allowNull && (left === null || typeof left === "undefined"))
@@ -143,9 +141,7 @@ export const getEvaluator = (
   }
   const binStringOp =
     <Out extends number | boolean>(op: (a: string, b: string) => Out) =>
-    (_left: Ast, _right: Ast) => {
-      const left = evaluate(_left);
-      const right = evaluate(_right);
+    (left: unknown, right: unknown) => {
       if (typeof left !== "string") {
         throw new Error(stringify(left) + " is not a string");
       }
@@ -385,7 +381,9 @@ export const getEvaluator = (
         return !!right;
       }
       case "OpDivide": {
-        return binFloatOp((a, b) => a / b)(ast.left, ast.right);
+        const left = evaluate(ast.left);
+        const right = evaluate(ast.right);
+        return binFloatOp((a, b) => a / b)(left, right);
       }
       case "OpEQ": {
         const left = evaluate(ast.left);
@@ -394,43 +392,41 @@ export const getEvaluator = (
         return left === right;
       }
       case "OpGE": {
-        if (
-          ast.left.type === "StringLiteral" &&
-          ast.right.type === "StringLiteral"
-        ) {
-          return binStringOp((a, b) => a >= b)(ast.left, ast.right);
+        const left = evaluate(ast.left);
+        const right = evaluate(ast.right);
+        if (typeof left === "string" && typeof right === "string") {
+          return binStringOp((a, b) => a >= b)(left, right);
         }
-        return binFloatOp((a, b) => a >= b, true)(ast.left, ast.right);
+        return binFloatOp((a, b) => a >= b, true)(left, right);
       }
       case "OpGT": {
-        if (
-          ast.left.type === "StringLiteral" &&
-          ast.right.type === "StringLiteral"
-        ) {
-          return binStringOp((a, b) => a > b)(ast.left, ast.right);
+        const left = evaluate(ast.left);
+        const right = evaluate(ast.right);
+        if (typeof left === "string" && typeof right === "string") {
+          return binStringOp((a, b) => a > b)(left, right);
         }
-        return binFloatOp((a, b) => a > b, true)(ast.left, ast.right);
+        return binFloatOp((a, b) => a > b, true)(left, right);
       }
       case "OpLE": {
-        if (
-          ast.left.type === "StringLiteral" &&
-          ast.right.type === "StringLiteral"
-        ) {
-          return binStringOp((a, b) => a <= b)(ast.left, ast.right);
+        const left = evaluate(ast.left);
+        const right = evaluate(ast.right);
+        if (typeof left === "string" && typeof right === "string") {
+          return binStringOp((a, b) => a <= b)(left, right);
         }
-        return binFloatOp((a, b) => a <= b, true)(ast.left, ast.right);
+        return binFloatOp((a, b) => a <= b, true)(left, right);
       }
       case "OpLT": {
-        if (
-          ast.left.type === "StringLiteral" &&
-          ast.right.type === "StringLiteral"
-        ) {
-          return binStringOp((a, b) => a < b)(ast.left, ast.right);
+        const left = evaluate(ast.left);
+        const right = evaluate(ast.right);
+        if (typeof left === "string" && typeof right === "string") {
+          return binStringOp((a, b) => a < b)(left, right);
         }
-        return binFloatOp((a, b) => a < b, true)(ast.left, ast.right);
+        return binFloatOp((a, b) => a < b, true)(left, right);
       }
       case "OpMatches": {
-        return binStringOp((a, b) => compileRegex(b)(a))(ast.left, ast.right);
+        const left = evaluate(ast.left);
+        const right = evaluate(ast.right);
+        return binStringOp((a, b) => compileRegex(b)(a))(left, right);
       }
       case "OpBetween": {
         const left = evaluate(ast.left);
@@ -445,13 +441,19 @@ export const getEvaluator = (
         return firstValue <= left && left <= secondValue;
       }
       case "OpMinus": {
-        return binFloatOp((a, b) => a - b)(ast.left, ast.right);
+        const left = evaluate(ast.left);
+        const right = evaluate(ast.right);
+        return binFloatOp((a, b) => a - b)(left, right);
       }
       case "OpModulus": {
-        return binFloatOp((a, b) => a % b)(ast.left, ast.right);
+        const left = evaluate(ast.left);
+        const right = evaluate(ast.right);
+        return binFloatOp((a, b) => a % b)(left, right);
       }
       case "OpMultiply": {
-        return binFloatOp((a, b) => a * b)(ast.left, ast.right);
+        const left = evaluate(ast.left);
+        const right = evaluate(ast.right);
+        return binFloatOp((a, b) => a * b)(left, right);
       }
       case "OpNE": {
         const left = evaluate(ast.left);
@@ -517,7 +519,9 @@ export const getEvaluator = (
         return (left as any) + right;
       }
       case "OpPower": {
-        return binFloatOp((a, b) => a ** b)(ast.base, ast.expression);
+        const base = evaluate(ast.base);
+        const expression = evaluate(ast.expression);
+        return binFloatOp((a, b) => a ** b)(base, expression);
       }
       case "Projection": {
         const { nullSafeNavigation, expression } = ast;

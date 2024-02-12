@@ -555,4 +555,20 @@ describe("Evaluation", () => {
       )(ast)
     ).toEqual(1);
   });
+
+  const comparators = [">", ">=", "==", "<", "<="];
+  comparators.forEach((cmp) => {
+    it("Should have string comparison", () => {
+      const ast = parse(`left ${cmp} right`);
+      expect(
+        getEvaluator(
+          {
+            left: "foo",
+            right: "foo",
+          },
+          {}
+        )(ast)
+      ).toEqual(cmp.includes("=") ? true : false);
+    });
+  });
 });
