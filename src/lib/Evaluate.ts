@@ -51,6 +51,7 @@ const maybeFromUndefined = (value: unknown) => {
 export type EvalOptions = {
   disableBoolOpChecks?: true;
   disableNullPointerExceptions?: true;
+  fallbackToFunctions?: true; // if a method in context wasn't found, look up in 'functionsAndVariables'
 };
 
 export const getEvaluator = (
@@ -61,6 +62,7 @@ export const getEvaluator = (
   const disableBoolOpChecks = options?.disableBoolOpChecks ?? false;
   const disableNullPointerExceptions =
     options?.disableNullPointerExceptions ?? false;
+  const fallbackToFunctions = options?.fallbackToFunctions ?? false;
   let stack: unknown[] = [rootContext]; // <- could be a class.
   const getHead = () => {
     if (stack.length > 0) {
@@ -348,7 +350,17 @@ export const getEvaluator = (
             const boundFn = valueInTopContext.bind(head);
             return boundFn(...evaluatedArguments);
           }
-        } else if (!ast.nullSafeNavigation) {
+        }
+        if (fallbackToFunctions) {
+          // method wasn't found - let's look in functions and variables
+          const entryInFunctionsAndVariables =
+            functionsAndVariables[ast.methodName];
+          if (typeof entryInFunctionsAndVariables === "function") {
+            const evaluatedArguments = ast.args.map((arg) => evaluateArg(arg));
+            return entryInFunctionsAndVariables(...evaluatedArguments);
+          }
+        }
+        if (!ast.nullSafeNavigation) {
           throw new Error("Method " + ast.methodName + " not found.");
         }
         return null;

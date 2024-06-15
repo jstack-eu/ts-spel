@@ -572,3 +572,25 @@ describe("Evaluation", () => {
     });
   });
 });
+
+it("Should fallback to functions for method calls if option specified", () => {
+  const ast = parse(`foo()`);
+  expect(() =>
+    getEvaluator(
+      {},
+      { foo: () => "hi" },
+      {
+        // default (don't fallback),
+      }
+    )(ast)
+  ).toThrow();
+  expect(
+    getEvaluator(
+      {},
+      { foo: () => "hi" },
+      {
+        fallbackToFunctions: true,
+      }
+    )(ast)
+  ).toEqual("hi");
+});
