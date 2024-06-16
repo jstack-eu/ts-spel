@@ -56,7 +56,9 @@ export type EvalOptions = {
 
 export const getEvaluator = (
   rootContext: Record<string, unknown>,
-  functionsAndVariables: Record<string, unknown>,
+  functionsAndVariables:
+    | Record<string, unknown>
+    | Array<Record<string, unknown>>,
   options?: EvalOptions
 ) => {
   const disableBoolOpChecks = options?.disableBoolOpChecks ?? false;
@@ -91,6 +93,15 @@ export const getEvaluator = (
     } else if (variableName === "root") {
       return some(stack[0]);
     } else {
+      if (Array.isArray(functionsAndVariables)) {
+        for (let i = 0; i < functionsAndVariables.length; i++) {
+          const res = functionsAndVariables[i][variableName];
+          if (typeof res !== "undefined") {
+            return some(res);
+          }
+        }
+        return none;
+      }
       return maybeFromUndefined(functionsAndVariables[variableName]);
     }
   };
@@ -353,11 +364,15 @@ export const getEvaluator = (
         }
         if (fallbackToFunctions) {
           // method wasn't found - let's look in functions and variables
-          const entryInFunctionsAndVariables =
-            functionsAndVariables[ast.methodName];
-          if (typeof entryInFunctionsAndVariables === "function") {
+          const entryInFunctionsAndVariables = getValueInProvidedFuncsAndVars(
+            ast.methodName
+          );
+          if (
+            entryInFunctionsAndVariables.isSome &&
+            typeof entryInFunctionsAndVariables.value === "function"
+          ) {
             const evaluatedArguments = ast.args.map((arg) => evaluateArg(arg));
-            return entryInFunctionsAndVariables(...evaluatedArguments);
+            return entryInFunctionsAndVariables.value(...evaluatedArguments);
           }
         }
         if (!ast.nullSafeNavigation) {

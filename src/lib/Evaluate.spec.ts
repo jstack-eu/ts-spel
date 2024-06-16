@@ -594,3 +594,22 @@ it("Should fallback to functions for method calls if option specified", () => {
     )(ast)
   ).toEqual("hi");
 });
+
+it("Should accept an array of fallback function contexts", () => {
+  expect(getEvaluator({}, [{ a: 1 }, { b: 2 }], {})(parse(`#a + #b`))).toEqual(
+    3
+  );
+  expect(
+    getEvaluator({}, [{}, { foo: null }, { foo: 1 }], {})(parse(`#foo`))
+  ).toEqual(null);
+  expect(
+    getEvaluator({}, [{}, {}, { foo: () => "hi" }], {
+      fallbackToFunctions: true,
+    })(parse(`foo()`))
+  ).toEqual("hi");
+  expect(
+    getEvaluator({}, [{}, {}, { foo: () => "hi" }], {
+      fallbackToFunctions: true,
+    })(parse(`foo()`))
+  ).toEqual("hi");
+});
