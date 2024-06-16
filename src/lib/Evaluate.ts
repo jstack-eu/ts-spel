@@ -52,6 +52,7 @@ export type EvalOptions = {
   disableBoolOpChecks?: true;
   disableNullPointerExceptions?: true;
   fallbackToFunctions?: true; // if a method in context wasn't found, look up in 'functionsAndVariables'
+  fallbackToVariables?: true; // if a property in context wasn't found, look up in 'functionsAndVariables'
 };
 
 export const getEvaluator = (
@@ -65,6 +66,7 @@ export const getEvaluator = (
   const disableNullPointerExceptions =
     options?.disableNullPointerExceptions ?? false;
   const fallbackToFunctions = options?.fallbackToFunctions ?? false;
+  const fallbackToVariables = options?.fallbackToVariables ?? false;
   let stack: unknown[] = [rootContext]; // <- could be a class.
   const getHead = () => {
     if (stack.length > 0) {
@@ -600,6 +602,13 @@ export const getEvaluator = (
               // and it will return null.
               return null;
             }
+
+            if (fallbackToVariables) {
+              const res = getValueInProvidedFuncsAndVars(propertyName);
+              if (res.isSome) {
+                return res.value;
+              }
+            }
             if (disableNullPointerExceptions) {
               return null;
             }
@@ -619,6 +628,12 @@ export const getEvaluator = (
         if (isNone(valueInContext)) {
           if (nullSafeNavigation) {
             return null;
+          }
+          if (fallbackToVariables) {
+            const res = getValueInProvidedFuncsAndVars(propertyName);
+            if (res.isSome) {
+              return res.value;
+            }
           }
           if (disableNullPointerExceptions) {
             return null;

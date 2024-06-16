@@ -595,6 +595,65 @@ it("Should fallback to functions for method calls if option specified", () => {
   ).toEqual("hi");
 });
 
+it("Should fallback to variables for missing properties if option specified", () => {
+  const ast = parse(`foo`);
+  expect(() =>
+    getEvaluator(
+      {},
+      { foo: "hi" },
+      {
+        // default (don't fallback),
+      }
+    )(ast)
+  ).toThrow();
+  expect(
+    getEvaluator(
+      {},
+      { foo: "hi" },
+      {
+        fallbackToVariables: true,
+      }
+    )(ast)
+  ).toEqual("hi");
+  expect(() =>
+    getEvaluator(
+      { foo: null },
+      { bar: 1 },
+      {
+        fallbackToVariables: true,
+      }
+    )(parse(`foo.bar`))
+  ).toThrow();
+  expect(
+    getEvaluator(
+      { foo: null },
+      { bar: 1 },
+      {
+        fallbackToVariables: true,
+      }
+    )(parse(`foo?.bar`))
+  ).toEqual(null);
+
+  expect(
+    getEvaluator(
+      { foo: {} },
+      { bar: 1 },
+      {
+        fallbackToVariables: true,
+      }
+    )(parse(`foo?.bar`))
+  ).toEqual(null);
+  expect(
+    getEvaluator(
+      { foo: {} },
+      { bar: 1 },
+      {
+        fallbackToVariables: true,
+      }
+    )(parse(`bar`))
+  ).toEqual(1);
+});
+
 it("Should accept an array of fallback function contexts", () => {
   expect(getEvaluator({}, [{ a: 1 }, { b: 2 }], {})(parse(`#a + #b`))).toEqual(
     3
