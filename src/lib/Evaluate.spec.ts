@@ -672,3 +672,13 @@ it("Should accept an array of fallback function contexts", () => {
     })(parse(`foo()`))
   ).toEqual("hi");
 });
+
+it("Should handle projection of dictionaries correctly.", () => {
+  expect(getEvaluator({}, {})(parse(`{a: 1, b: 2}.![#this.key]`))).toEqual([
+    "a",
+    "b",
+  ]);
+  expect(getEvaluator({}, {})(parse(`{a: 1, b: 2}.![#this.value]`))).toEqual([
+    1, 2,
+  ]);
+});

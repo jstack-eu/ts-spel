@@ -568,8 +568,8 @@ export const getEvaluator = (
           });
         }
         if (head && typeof head === "object") {
-          return Object.values(head).map((v) => {
-            stack.push(v);
+          return Object.entries(head).map(([key, value]) => {
+            stack.push({ key, value });
             const result = evaluate(expression);
             stack.pop();
             return result;
