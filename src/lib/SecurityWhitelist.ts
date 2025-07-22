@@ -315,7 +315,8 @@ export function createDefaultWhitelist(): SecurityWhitelist {
         'concat', 'every', 'filter', 'find', 'findIndex',
         'forEach', 'includes', 'indexOf', 'join', 'lastIndexOf',
         'map', 'reduce', 'reduceRight', 'reverse', 'slice',
-        'some', 'sort', 'length', 'toString', 'flat', 'flatMap'
+        'some', 'sort', 'length', 'toString', 'flat', 'flatMap',
+        'get', 'add', 'size', 'contains'
       ])],
       ['Date', new Set([
         'getDate', 'getDay', 'getFullYear', 'getHours',
@@ -337,7 +338,7 @@ export function createDefaultWhitelist(): SecurityWhitelist {
       ])],
       ['Object', new Set([
         'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable',
-        'toString', 'valueOf', 'toLocaleString'
+        'toString', 'valueOf', 'toLocaleString', 'get', 'add'
       ])]
     ]),
     blockDangerousProperties: true,

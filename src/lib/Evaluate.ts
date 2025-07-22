@@ -758,7 +758,7 @@ export const getEvaluator = (
           const head = getHead();
           if (head === null || typeof head === "undefined") {
             whitelist.exitPropertyChain();
-            if (nullSafeNavigation) {
+            if (nullSafeNavigation || disableNullPointerExceptions) {
               return null;
             }
             throw new Error(

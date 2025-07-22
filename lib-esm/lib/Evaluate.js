@@ -678,7 +678,7 @@ export var getEvaluator = function (rootContext, functionsAndVariables, options)
                     var head = getHead();
                     if (head === null || typeof head === "undefined") {
                         whitelist.exitPropertyChain();
-                        if (nullSafeNavigation) {
+                        if (nullSafeNavigation || disableNullPointerExceptions) {
                             return null;
                         }
                         throw new Error("Cannot chain property \"".concat(propertyName, "\" off of ").concat(head === null ? "null" : "undefined"));
