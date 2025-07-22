@@ -494,6 +494,89 @@ export const getEvaluator = (
             return currentContext.indexOf(searchString, typeof position === "number" ? position : undefined);
           }
         }
+        if (ast.methodName === "lastIndexOf") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            const searchString = evaluateArg(ast.args[0]);
+            if (typeof searchString !== "string") {
+              whitelist.exitCall();
+              throw new Error(
+                "Cannot call 'string.lastIndexOf()' with argument of type " +
+                  typeof searchString
+              );
+            }
+            const position = ast.args[1] ? evaluateArg(ast.args[1]) : undefined;
+            whitelist.exitCall();
+            return currentContext.lastIndexOf(searchString, typeof position === "number" ? position : undefined);
+          }
+        }
+        if (ast.methodName === "toLowerCase") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            whitelist.exitCall();
+            return currentContext.toLowerCase();
+          }
+        }
+        if (ast.methodName === "toUpperCase") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            whitelist.exitCall();
+            return currentContext.toUpperCase();
+          }
+        }
+        if (ast.methodName === "trim") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            whitelist.exitCall();
+            return currentContext.trim();
+          }
+        }
+        if (ast.methodName === "substring") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            const start = evaluateArg(ast.args[0]);
+            if (typeof start !== "number") {
+              whitelist.exitCall();
+              throw new Error(
+                "Cannot call 'string.substring()' with start argument of type " +
+                  typeof start
+              );
+            }
+            const end = ast.args[1] ? evaluateArg(ast.args[1]) : undefined;
+            if (end !== undefined && typeof end !== "number") {
+              whitelist.exitCall();
+              throw new Error(
+                "Cannot call 'string.substring()' with end argument of type " +
+                  typeof end
+              );
+            }
+            whitelist.exitCall();
+            return currentContext.substring(start, end as number | undefined);
+          }
+        }
+        if (ast.methodName === "substr") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            const start = evaluateArg(ast.args[0]);
+            if (typeof start !== "number") {
+              whitelist.exitCall();
+              throw new Error(
+                "Cannot call 'string.substr()' with start argument of type " +
+                  typeof start
+              );
+            }
+            const length = ast.args[1] ? evaluateArg(ast.args[1]) : undefined;
+            if (length !== undefined && typeof length !== "number") {
+              whitelist.exitCall();
+              throw new Error(
+                "Cannot call 'string.substr()' with length argument of type " +
+                  typeof length
+              );
+            }
+            whitelist.exitCall();
+            return currentContext.substr(start, length as number | undefined);
+          }
+        }
         if (ast.methodName === "matches") {
           const currentContext = getHead();
           if (typeof currentContext === "string") {
@@ -519,6 +602,13 @@ export const getEvaluator = (
           if (Array.isArray(currentContext)) {
             whitelist.exitCall();
             return currentContext.length;
+          }
+        }
+        if (ast.methodName === "isEmpty") {
+          const currentContext = getHead();
+          if (Array.isArray(currentContext)) {
+            whitelist.exitCall();
+            return currentContext.length === 0;
           }
         }
         if (ast.methodName === "get") {

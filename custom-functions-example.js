@@ -51,6 +51,7 @@ const customFunctions = {
   SUM: (...args) => args.reduce((a, b) => a + b, 0),
   MIN: (...args) => Math.min(...args),
   MAX: (...args) => Math.max(...args),
+  ABS: (value) => Math.abs(value),
   
   // String functions
   FORMATSTRING: (template, ...args) => {

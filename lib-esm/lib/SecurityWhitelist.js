@@ -252,6 +252,7 @@ export function createDefaultWhitelist() {
             'SUM',
             'MIN',
             'MAX',
+            'ABS',
             // String functions
             'FORMATSTRING',
             'TO_STRING',
@@ -279,7 +280,7 @@ export function createDefaultWhitelist() {
             ['String', new Set([
                     'charAt', 'charCodeAt', 'concat', 'includes', 'indexOf',
                     'lastIndexOf', 'match', 'matches', 'padEnd', 'padStart', 'repeat',
-                    'replace', 'search', 'slice', 'split', 'substring',
+                    'replace', 'search', 'slice', 'split', 'substring', 'substr',
                     'toLowerCase', 'toUpperCase', 'trim', 'trimEnd', 'trimStart',
                     'length', 'toString', 'valueOf', 'localeCompare',
                     'startsWith', 'endsWith', 'normalize'
@@ -292,7 +293,8 @@ export function createDefaultWhitelist() {
                     'concat', 'every', 'filter', 'find', 'findIndex',
                     'forEach', 'includes', 'indexOf', 'join', 'lastIndexOf',
                     'map', 'reduce', 'reduceRight', 'reverse', 'slice',
-                    'some', 'sort', 'length', 'toString', 'flat', 'flatMap'
+                    'some', 'sort', 'length', 'toString', 'flat', 'flatMap',
+                    'size', 'isEmpty'
                 ])],
             ['Date', new Set([
                     'getDate', 'getDay', 'getFullYear', 'getHours',
