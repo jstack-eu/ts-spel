@@ -2,6 +2,8 @@ import { Ast } from "./Ast";
 import { UnexpectedError } from "./CustomErrors";
 import { compile as compileRegex } from "java-regex-js";
 import JSOG from "jsog";
+import { SecurityWhitelist, WhitelistConfig } from "./SecurityWhitelist";
+import { RegexValidator, safeCompileRegex } from "./RegexValidator";
 
 const stringify = (obj: unknown) => {
   try {
@@ -53,6 +55,7 @@ export type EvalOptions = {
   disableNullPointerExceptions?: true;
   fallbackToFunctions?: true; // if a method in context wasn't found, look up in 'functionsAndVariables'
   fallbackToVariables?: true; // if a property in context wasn't found, look up in 'functionsAndVariables'
+  // Security features are now always enabled and not configurable
 };
 
 export const getEvaluator = (
@@ -67,6 +70,13 @@ export const getEvaluator = (
     options?.disableNullPointerExceptions ?? false;
   const fallbackToFunctions = options?.fallbackToFunctions ?? false;
   const fallbackToVariables = options?.fallbackToVariables ?? false;
+  
+  // Security features are always enabled and non-configurable
+  const { createDefaultWhitelist } = require("./SecurityWhitelist");
+  const whitelist: SecurityWhitelist = createDefaultWhitelist();
+  
+  const { defaultRegexValidator } = require("./RegexValidator");
+  const regexValidator: RegexValidator = defaultRegexValidator;
   let stack: unknown[] = [rootContext]; // <- could be a class.
   const getHead = () => {
     if (stack.length > 0) {
@@ -97,14 +107,20 @@ export const getEvaluator = (
     } else {
       if (Array.isArray(functionsAndVariables)) {
         for (let i = 0; i < functionsAndVariables.length; i++) {
-          const res = functionsAndVariables[i][variableName];
-          if (typeof res !== "undefined") {
-            return some(res);
+          if (Object.prototype.hasOwnProperty.call(functionsAndVariables[i], variableName)) {
+            const res = functionsAndVariables[i][variableName];
+            if (typeof res !== "undefined") {
+              return some(res);
+            }
           }
         }
         return none;
       }
-      return maybeFromUndefined(functionsAndVariables[variableName]);
+      // Use safe property access
+      if (Object.prototype.hasOwnProperty.call(functionsAndVariables, variableName)) {
+        return maybeFromUndefined(functionsAndVariables[variableName]);
+      }
+      return none;
     }
   };
   const searchForPropertyValueInContextStack = (variable: string): Maybe => {
@@ -114,7 +130,11 @@ export const getEvaluator = (
       } else if (variable === "this") {
         return some(curr);
       } else if (curr !== null && typeof curr !== "undefined") {
-        return maybeFromUndefined(curr[variable]);
+        // Use safe property access to prevent prototype pollution
+        if (Object.prototype.hasOwnProperty.call(curr, variable)) {
+          return maybeFromUndefined(curr[variable]);
+        }
+        return none;
       } else {
         return none;
       }
@@ -194,6 +214,15 @@ export const getEvaluator = (
       case "BooleanLiteral":
         return ast.value;
       case "CompoundExpression": {
+        // Check if this compound expression exceeds property chain depth
+        const propertyReferenceCount = ast.expressionComponents.filter(
+          component => component.type === "PropertyReference"
+        ).length;
+        
+        if (propertyReferenceCount > 10) { // Default max depth
+          throw new Error(`Security violation: Maximum property chain depth exceeded: ${propertyReferenceCount} (max: 10)`);
+        }
+        
         ixOfThisBeforeCompoundOpened.pushCurrent();
         const res = ast.expressionComponents.reduce((_, curr, i) => {
           const isFirst = i === 0;
@@ -216,11 +245,20 @@ export const getEvaluator = (
         }
       }
       case "FunctionReference": {
+        // Check whitelist before allowing function call
+        try {
+          whitelist.validateFunctionCall(ast.functionName);
+          whitelist.enterCall();
+        } catch (error) {
+          throw new Error(`Security violation: ${error.message}`);
+        }
+        
         const maybeProvidedFunction = getValueInProvidedFuncsAndVars(
           ast.functionName
         );
         const evaluatedArguments = ast.args.map((arg) => evaluate(arg));
         if (isNone(maybeProvidedFunction)) {
+          whitelist.exitCall();
           if (!ast.nullSafeNavigation) {
             throw new Error("Function " + ast.functionName + " not found.");
           } else {
@@ -229,11 +267,20 @@ export const getEvaluator = (
         }
         const { value } = maybeProvidedFunction;
         if (typeof value !== "function") {
+          whitelist.exitCall();
           throw new Error(
             "Variable " + ast.functionName + " is not a function."
           );
         }
-        return value(...evaluatedArguments);
+        
+        try {
+          const result = value(...evaluatedArguments);
+          whitelist.exitCall();
+          return result;
+        } catch (error) {
+          whitelist.exitCall();
+          throw error;
+        }
       }
       case "Indexer": {
         const head = getHead();
@@ -260,6 +307,18 @@ export const getEvaluator = (
               return result;
             })()
           : evaluate(ast.index);
+        
+        // Check whitelist for string property access via indexer
+        if (typeof index === "string") {
+          try {
+            whitelist.enterPropertyChain();
+            whitelist.validatePropertyAccess(index);
+            whitelist.validateObjectAccess(head);
+          } catch (error) {
+            whitelist.exitPropertyChain();
+            throw new Error(`Security violation: ${error.message}`);
+          }
+        }
         if (typeof head === "string" && typeof index === "number") {
           if (index >= 0 && index < head.length) {
             return head[index];
@@ -280,10 +339,20 @@ export const getEvaluator = (
           (typeof index === "string" || typeof index === "number")
         ) {
           if (Object.prototype.hasOwnProperty.call(head, index)) {
-            return head[index];
+            const result = head[index];
+            if (typeof index === "string") {
+              whitelist.exitPropertyChain();
+            }
+            return result;
           } else {
+            if (typeof index === "string") {
+              whitelist.exitPropertyChain();
+            }
             return null;
           }
+        }
+        if (typeof index === "string") {
+          whitelist.exitPropertyChain();
         }
         throw new Error(
           "Not supported: indexing into " +
@@ -302,6 +371,15 @@ export const getEvaluator = (
         }, {});
       }
       case "MethodReference": {
+        // Check whitelist for method access
+        const head = getHead();
+        try {
+          whitelist.validateMethodCall(head, ast.methodName);
+          whitelist.enterCall();
+        } catch (error) {
+          throw new Error(`Security violation: ${error.message}`);
+        }
+        
         const evaluateArg = (arg: Ast) => {
           if (
             // no index of a currently opened compound expression has been found
@@ -327,6 +405,7 @@ export const getEvaluator = (
         if (ast.methodName === "length") {
           const currentContext = getHead();
           if (typeof currentContext === "string") {
+            whitelist.exitCall();
             return currentContext.length;
           }
         }
@@ -335,33 +414,52 @@ export const getEvaluator = (
           if (typeof currentContext === "string") {
             const rx = evaluateArg(ast.args[0]);
             if (typeof rx !== "string") {
+              whitelist.exitCall();
               throw new Error(
                 "Cannot call 'string.matches()' with argument of type " +
                   typeof rx
               );
             }
-            return compileRegex(rx)(currentContext);
+            whitelist.exitCall();
+            // Use safe regex compilation with validation
+            try {
+              return safeCompileRegex(rx, regexValidator)(currentContext);
+            } catch (error) {
+              throw new Error(`Regex validation failed: ${error.message}`);
+            }
           }
         }
         if (ast.methodName === "size") {
           const currentContext = getHead();
           if (Array.isArray(currentContext)) {
+            whitelist.exitCall();
             return currentContext.length;
           }
         }
         if (ast.methodName === "contains") {
           const currentContext = getHead();
           if (Array.isArray(currentContext)) {
-            return currentContext.includes(evaluateArg(ast.args[0]));
+            const result = currentContext.includes(evaluateArg(ast.args[0]));
+            whitelist.exitCall();
+            return result;
           }
         }
-        const head = getHead();
-        const valueInTopContext = head?.[ast.methodName];
+        // Safe property access for method lookup
+        const valueInTopContext = head && Object.prototype.hasOwnProperty.call(head, ast.methodName) 
+          ? head[ast.methodName] 
+          : undefined;
         if (valueInTopContext) {
           const evaluatedArguments = ast.args.map((arg) => evaluateArg(arg)); // <- arguments are evaluated lazily
           if (typeof valueInTopContext === "function") {
             const boundFn = valueInTopContext.bind(head);
-            return boundFn(...evaluatedArguments);
+            try {
+              const result = boundFn(...evaluatedArguments);
+              whitelist.exitCall();
+              return result;
+            } catch (error) {
+              whitelist.exitCall();
+              throw error;
+            }
           }
         }
         if (fallbackToFunctions) {
@@ -374,9 +472,17 @@ export const getEvaluator = (
             typeof entryInFunctionsAndVariables.value === "function"
           ) {
             const evaluatedArguments = ast.args.map((arg) => evaluateArg(arg));
-            return entryInFunctionsAndVariables.value(...evaluatedArguments);
+            try {
+              const result = entryInFunctionsAndVariables.value(...evaluatedArguments);
+              whitelist.exitCall();
+              return result;
+            } catch (error) {
+              whitelist.exitCall();
+              throw error;
+            }
           }
         }
+        whitelist.exitCall();
         if (!ast.nullSafeNavigation) {
           throw new Error("Method " + ast.methodName + " not found.");
         }
@@ -455,7 +561,14 @@ export const getEvaluator = (
       case "OpMatches": {
         const left = evaluate(ast.left);
         const right = evaluate(ast.right);
-        return binStringOp((a, b) => compileRegex(b)(a))(left, right);
+        return binStringOp((a, b) => {
+          // Use safe regex compilation with validation
+          try {
+            return safeCompileRegex(b, regexValidator)(a);
+          } catch (error) {
+            throw new Error(`Regex validation failed: ${error.message}`);
+          }
+        })(left, right);
       }
       case "OpBetween": {
         const left = evaluate(ast.left);
@@ -581,10 +694,21 @@ export const getEvaluator = (
       }
       case "PropertyReference": {
         const { nullSafeNavigation, propertyName } = ast;
+        
+        // Track property chain depth to prevent uncontrolled traversal
+        try {
+          whitelist.enterPropertyChain();
+          whitelist.validatePropertyAccess(propertyName);
+        } catch (error) {
+          whitelist.exitPropertyChain();
+          throw new Error(`Security violation: ${error.message}`);
+        }
+        
         if (isCompound && !isFirstInCompound) {
           // we can only get the head.
           const head = getHead();
           if (head === null || typeof head === "undefined") {
+            whitelist.exitPropertyChain();
             if (nullSafeNavigation) {
               return null;
             }
@@ -595,7 +719,16 @@ export const getEvaluator = (
             );
           }
 
-          if (typeof head[propertyName] === "undefined") {
+          // Validate object access for sensitive object detection
+          try {
+            whitelist.validateObjectAccess(head);
+          } catch (error) {
+            whitelist.exitPropertyChain();
+            throw new Error(`Security violation: ${error.message}`);
+          }
+
+          if (!Object.prototype.hasOwnProperty.call(head, propertyName) || typeof head[propertyName] === "undefined") {
+            whitelist.exitPropertyChain();
             if (nullSafeNavigation) {
               // This doesn't seem right at first, but it actually works like that.
               // we can do ?.nonexistantproperty
@@ -620,12 +753,20 @@ export const getEvaluator = (
                 stringify(stack)
             );
           }
-          return head[propertyName];
+          // Use safe property access to prevent prototype pollution
+          if (Object.prototype.hasOwnProperty.call(head, propertyName)) {
+            const result = head[propertyName];
+            whitelist.exitPropertyChain();
+            return result;
+          }
+          whitelist.exitPropertyChain();
+          return undefined;
         }
 
         const valueInContext: Maybe<unknown> =
           searchForPropertyValueInContextStack(propertyName);
         if (isNone(valueInContext)) {
+          whitelist.exitPropertyChain();
           if (nullSafeNavigation) {
             return null;
           }
@@ -645,6 +786,16 @@ export const getEvaluator = (
               stringify(stack)
           );
         }
+        
+        // Validate the accessed object for sensitive object detection
+        try {
+          whitelist.validateObjectAccess(valueInContext.value);
+        } catch (error) {
+          whitelist.exitPropertyChain();
+          throw new Error(`Security violation: ${error.message}`);
+        }
+        
+        whitelist.exitPropertyChain();
         return valueInContext.value;
       }
       case "SelectionAll": {
@@ -782,5 +933,9 @@ export const getEvaluator = (
       }
     }
   };
-  return (ast: Ast) => evaluate(ast);
+  return (ast: Ast) => {
+    // Reset property chain depth for each new expression evaluation
+    whitelist.resetPropertyChain();
+    return evaluate(ast);
+  };
 };
