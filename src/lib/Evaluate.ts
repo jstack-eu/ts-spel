@@ -267,7 +267,34 @@ export const getEvaluator = (
       case "FunctionReference": {
         // Handle T(java.lang.Math) static calls
         if (ast.functionName === "T" && ast.args.length === 1) {
-          const staticClass = evaluate(ast.args[0]);
+          let staticClass: string | null = null;
+          const arg = ast.args[0];
+          
+          // Handle different argument types
+          if (arg.type === "StringLiteral") {
+            // T('java.lang.Math') - string literal
+            staticClass = arg.value;
+          } else if (arg.type === "CompoundExpression") {
+            // T(java.lang.Math) - compound expression of property references
+            // Reconstruct the class name from property references
+            const parts: string[] = [];
+            for (const component of arg.expressionComponents) {
+              if (component.type === "PropertyReference") {
+                parts.push(component.propertyName);
+              } else {
+                // If it's not all property references, fall back to evaluation
+                staticClass = evaluate(arg) as string;
+                break;
+              }
+            }
+            if (parts.length > 0 && staticClass === null) {
+              staticClass = parts.join('.');
+            }
+          } else {
+            // For other types, evaluate normally
+            staticClass = evaluate(arg) as string;
+          }
+          
           if (staticClass === "java.lang.Math") {
             whitelist.enterCall();
             // Return a Math proxy object that allows method calls
@@ -805,13 +832,39 @@ export const getEvaluator = (
         }
         // T() static class access - handle as method
         if (ast.methodName === "T") {
-          const args = ast.args.map((arg) => evaluateArg(arg));
-          if (args.length !== 1) {
+          if (ast.args.length !== 1) {
             whitelist.exitCall();
             throw new Error("T function requires exactly one argument (class name)");
           }
           
-          const staticClass = args[0];
+          let staticClass: string | null = null;
+          const arg = ast.args[0];
+          
+          // Handle different argument types
+          if (arg.type === "StringLiteral") {
+            // T('java.lang.Math') - string literal
+            staticClass = arg.value;
+          } else if (arg.type === "CompoundExpression") {
+            // T(java.lang.Math) - compound expression of property references
+            // Reconstruct the class name from property references
+            const parts: string[] = [];
+            for (const component of arg.expressionComponents) {
+              if (component.type === "PropertyReference") {
+                parts.push(component.propertyName);
+              } else {
+                // If it's not all property references, fall back to evaluation
+                staticClass = evaluateArg(arg) as string;
+                break;
+              }
+            }
+            if (parts.length > 0 && staticClass === null) {
+              staticClass = parts.join('.');
+            }
+          } else {
+            // For other types, evaluate normally
+            staticClass = evaluateArg(arg) as string;
+          }
+          
           if (staticClass === "java.lang.Math") {
             // Return a Math proxy object that allows method calls
             const mathProxy = {
