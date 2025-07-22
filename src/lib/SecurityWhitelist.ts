@@ -167,7 +167,10 @@ export class SecurityWhitelist {
 
     const objectType = this.getObjectType(object);
     if (this.config.allowedMethods.size > 0 && !this.isMethodAllowed(objectType, methodName)) {
-      throw new Error(`Call to method '${methodName}' on ${objectType} is not allowed`);
+      // Allow fallback to function whitelist for custom functions
+      if (!this.isFunctionAllowed(methodName)) {
+        throw new Error(`Call to method '${methodName}' on ${objectType} is not allowed`);
+      }
     }
   }
 
@@ -254,6 +257,7 @@ export function createDefaultWhitelist(): SecurityWhitelist {
       'SUBTRACTMONTHS',
       'SUBTRACTYEARS',
       'DAYSDIF',
+      'DAYSDIFF',
       'MONTHSDIF',
       'ENDOFMONTH',
       'STARTOFMONTH',
