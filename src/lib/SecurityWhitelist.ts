@@ -278,6 +278,8 @@ export function createDefaultWhitelist(): SecurityWhitelist {
       'DOUBLE',
       'ROUND',
       'SUM',
+      'MIN',
+      'MAX',
       // String functions
       'FORMATSTRING',
       'TO_STRING',

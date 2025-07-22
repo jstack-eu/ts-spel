@@ -250,6 +250,8 @@ export function createDefaultWhitelist() {
             'DOUBLE',
             'ROUND',
             'SUM',
+            'MIN',
+            'MAX',
             // String functions
             'FORMATSTRING',
             'TO_STRING',

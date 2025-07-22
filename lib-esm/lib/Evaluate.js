@@ -370,6 +370,63 @@ export var getEvaluator = function (rootContext, functionsAndVariables, options)
                         return currentContext.length;
                     }
                 }
+                // JavaScript string methods
+                if (ast.methodName === "endsWith") {
+                    var currentContext = getHead();
+                    if (typeof currentContext === "string") {
+                        var searchString = evaluateArg_1(ast.args[0]);
+                        if (typeof searchString !== "string") {
+                            whitelist.exitCall();
+                            throw new Error("Cannot call 'string.endsWith()' with argument of type " +
+                                typeof searchString);
+                        }
+                        var position = ast.args[1] ? evaluateArg_1(ast.args[1]) : undefined;
+                        whitelist.exitCall();
+                        return currentContext.endsWith(searchString, typeof position === "number" ? position : undefined);
+                    }
+                }
+                if (ast.methodName === "startsWith") {
+                    var currentContext = getHead();
+                    if (typeof currentContext === "string") {
+                        var searchString = evaluateArg_1(ast.args[0]);
+                        if (typeof searchString !== "string") {
+                            whitelist.exitCall();
+                            throw new Error("Cannot call 'string.startsWith()' with argument of type " +
+                                typeof searchString);
+                        }
+                        var position = ast.args[1] ? evaluateArg_1(ast.args[1]) : undefined;
+                        whitelist.exitCall();
+                        return currentContext.startsWith(searchString, typeof position === "number" ? position : undefined);
+                    }
+                }
+                if (ast.methodName === "includes") {
+                    var currentContext = getHead();
+                    if (typeof currentContext === "string") {
+                        var searchString = evaluateArg_1(ast.args[0]);
+                        if (typeof searchString !== "string") {
+                            whitelist.exitCall();
+                            throw new Error("Cannot call 'string.includes()' with argument of type " +
+                                typeof searchString);
+                        }
+                        var position = ast.args[1] ? evaluateArg_1(ast.args[1]) : undefined;
+                        whitelist.exitCall();
+                        return currentContext.includes(searchString, typeof position === "number" ? position : undefined);
+                    }
+                }
+                if (ast.methodName === "indexOf") {
+                    var currentContext = getHead();
+                    if (typeof currentContext === "string") {
+                        var searchString = evaluateArg_1(ast.args[0]);
+                        if (typeof searchString !== "string") {
+                            whitelist.exitCall();
+                            throw new Error("Cannot call 'string.indexOf()' with argument of type " +
+                                typeof searchString);
+                        }
+                        var position = ast.args[1] ? evaluateArg_1(ast.args[1]) : undefined;
+                        whitelist.exitCall();
+                        return currentContext.indexOf(searchString, typeof position === "number" ? position : undefined);
+                    }
+                }
                 if (ast.methodName === "matches") {
                     var currentContext = getHead();
                     if (typeof currentContext === "string") {

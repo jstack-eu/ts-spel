@@ -429,6 +429,71 @@ export const getEvaluator = (
             return currentContext.length;
           }
         }
+        // JavaScript string methods
+        if (ast.methodName === "endsWith") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            const searchString = evaluateArg(ast.args[0]);
+            if (typeof searchString !== "string") {
+              whitelist.exitCall();
+              throw new Error(
+                "Cannot call 'string.endsWith()' with argument of type " +
+                  typeof searchString
+              );
+            }
+            const position = ast.args[1] ? evaluateArg(ast.args[1]) : undefined;
+            whitelist.exitCall();
+            return currentContext.endsWith(searchString, typeof position === "number" ? position : undefined);
+          }
+        }
+        if (ast.methodName === "startsWith") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            const searchString = evaluateArg(ast.args[0]);
+            if (typeof searchString !== "string") {
+              whitelist.exitCall();
+              throw new Error(
+                "Cannot call 'string.startsWith()' with argument of type " +
+                  typeof searchString
+              );
+            }
+            const position = ast.args[1] ? evaluateArg(ast.args[1]) : undefined;
+            whitelist.exitCall();
+            return currentContext.startsWith(searchString, typeof position === "number" ? position : undefined);
+          }
+        }
+        if (ast.methodName === "includes") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            const searchString = evaluateArg(ast.args[0]);
+            if (typeof searchString !== "string") {
+              whitelist.exitCall();
+              throw new Error(
+                "Cannot call 'string.includes()' with argument of type " +
+                  typeof searchString
+              );
+            }
+            const position = ast.args[1] ? evaluateArg(ast.args[1]) : undefined;
+            whitelist.exitCall();
+            return currentContext.includes(searchString, typeof position === "number" ? position : undefined);
+          }
+        }
+        if (ast.methodName === "indexOf") {
+          const currentContext = getHead();
+          if (typeof currentContext === "string") {
+            const searchString = evaluateArg(ast.args[0]);
+            if (typeof searchString !== "string") {
+              whitelist.exitCall();
+              throw new Error(
+                "Cannot call 'string.indexOf()' with argument of type " +
+                  typeof searchString
+              );
+            }
+            const position = ast.args[1] ? evaluateArg(ast.args[1]) : undefined;
+            whitelist.exitCall();
+            return currentContext.indexOf(searchString, typeof position === "number" ? position : undefined);
+          }
+        }
         if (ast.methodName === "matches") {
           const currentContext = getHead();
           if (typeof currentContext === "string") {
