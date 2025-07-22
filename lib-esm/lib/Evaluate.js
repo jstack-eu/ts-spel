@@ -216,6 +216,40 @@ export var getEvaluator = function (rootContext, functionsAndVariables, options)
                 }
             }
             case "FunctionReference": {
+                // Handle T(java.lang.Math) static calls
+                if (ast.functionName === "T" && ast.args.length === 1) {
+                    var staticClass = evaluate(ast.args[0]);
+                    if (staticClass === "java.lang.Math") {
+                        whitelist.enterCall();
+                        // Return a Math proxy object that allows method calls
+                        var mathProxy = {
+                            min: function () {
+                                var args = [];
+                                for (var _i = 0; _i < arguments.length; _i++) {
+                                    args[_i] = arguments[_i];
+                                }
+                                return Math.min.apply(Math, args);
+                            },
+                            max: function () {
+                                var args = [];
+                                for (var _i = 0; _i < arguments.length; _i++) {
+                                    args[_i] = arguments[_i];
+                                }
+                                return Math.max.apply(Math, args);
+                            },
+                            abs: function (value) { return Math.abs(value); },
+                            round: function (value) { return Math.round(value); },
+                            floor: function (value) { return Math.floor(value); },
+                            ceil: function (value) { return Math.ceil(value); },
+                            sqrt: function (value) { return Math.sqrt(value); },
+                            pow: function (base, exponent) { return Math.pow(base, exponent); },
+                            // Mark this as a trusted Math proxy
+                            __isMathProxy: true
+                        };
+                        whitelist.exitCall();
+                        return mathProxy;
+                    }
+                }
                 // Check whitelist before allowing function call
                 try {
                     whitelist.validateFunctionCall(ast.functionName);
@@ -337,8 +371,10 @@ export var getEvaluator = function (rootContext, functionsAndVariables, options)
                 // Check whitelist for method access
                 var head = getHead();
                 // Global math functions don't need context validation
-                var globalMathFunctions = new Set(['MIN', 'MAX', 'ABS', 'ROUND', 'FLOOR', 'CEIL', 'DOUBLE']);
-                if (!globalMathFunctions.has(ast.methodName)) {
+                var globalMathFunctions = new Set(['MIN', 'MAX', 'ABS', 'ROUND', 'FLOOR', 'CEIL', 'DOUBLE', 'T']);
+                // Check if this is a Math proxy object (from T(java.lang.Math))
+                var isMathProxy = head && typeof head === 'object' && head.__isMathProxy;
+                if (!globalMathFunctions.has(ast.methodName) && !isMathProxy) {
                     try {
                         whitelist.validateMethodCall(head, ast.methodName);
                         whitelist.enterCall();
@@ -636,16 +672,29 @@ export var getEvaluator = function (rootContext, functionsAndVariables, options)
                 }
                 if (ast.methodName === "ROUND") {
                     var args = ast.args.map(function (arg) { return evaluateArg_1(arg); });
-                    if (args.length !== 1) {
+                    if (args.length < 1 || args.length > 2) {
                         whitelist.exitCall();
-                        throw new Error("ROUND function requires exactly one argument");
+                        throw new Error("ROUND function requires 1 or 2 arguments (value, precision)");
                     }
                     if (typeof args[0] !== "number") {
                         whitelist.exitCall();
-                        throw new Error("ROUND function argument must be a number, got ".concat(typeof args[0]));
+                        throw new Error("ROUND function value must be a number, got ".concat(typeof args[0]));
+                    }
+                    // Default precision is 0 (round to integer)
+                    var precision = args.length === 2 ? args[1] : 0;
+                    if (typeof precision !== "number" || !Number.isInteger(precision)) {
+                        whitelist.exitCall();
+                        throw new Error("ROUND function precision must be an integer, got ".concat(typeof precision));
                     }
                     whitelist.exitCall();
-                    return Math.round(args[0]);
+                    // Handle precision rounding
+                    if (precision === 0) {
+                        return Math.round(args[0]);
+                    }
+                    else {
+                        var factor = Math.pow(10, precision);
+                        return Math.round(args[0] * factor) / factor;
+                    }
                 }
                 if (ast.methodName === "FLOOR") {
                     var args = ast.args.map(function (arg) { return evaluateArg_1(arg); });
@@ -681,6 +730,46 @@ export var getEvaluator = function (rootContext, functionsAndVariables, options)
                     }
                     whitelist.exitCall();
                     return parseFloat(args[0]);
+                }
+                // T() static class access - handle as method
+                if (ast.methodName === "T") {
+                    var args = ast.args.map(function (arg) { return evaluateArg_1(arg); });
+                    if (args.length !== 1) {
+                        whitelist.exitCall();
+                        throw new Error("T function requires exactly one argument (class name)");
+                    }
+                    var staticClass = args[0];
+                    if (staticClass === "java.lang.Math") {
+                        // Return a Math proxy object that allows method calls
+                        var mathProxy = {
+                            min: function () {
+                                var mathArgs = [];
+                                for (var _i = 0; _i < arguments.length; _i++) {
+                                    mathArgs[_i] = arguments[_i];
+                                }
+                                return Math.min.apply(Math, mathArgs);
+                            },
+                            max: function () {
+                                var mathArgs = [];
+                                for (var _i = 0; _i < arguments.length; _i++) {
+                                    mathArgs[_i] = arguments[_i];
+                                }
+                                return Math.max.apply(Math, mathArgs);
+                            },
+                            abs: function (value) { return Math.abs(value); },
+                            round: function (value) { return Math.round(value); },
+                            floor: function (value) { return Math.floor(value); },
+                            ceil: function (value) { return Math.ceil(value); },
+                            sqrt: function (value) { return Math.sqrt(value); },
+                            pow: function (base, exponent) { return Math.pow(base, exponent); },
+                            // Mark this as a trusted Math proxy
+                            __isMathProxy: true
+                        };
+                        whitelist.exitCall();
+                        return mathProxy;
+                    }
+                    whitelist.exitCall();
+                    throw new Error("Unsupported static class: ".concat(staticClass));
                 }
                 // Safe property access for method lookup
                 var valueInTopContext = head && Object.prototype.hasOwnProperty.call(head, ast.methodName)

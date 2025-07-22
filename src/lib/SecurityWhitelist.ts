@@ -281,6 +281,7 @@ export function createDefaultWhitelist(): SecurityWhitelist {
       'MIN',
       'MAX',
       'ABS',
+      'T',
       // String functions
       'FORMATSTRING',
       'TO_STRING',
@@ -344,10 +345,11 @@ export function createDefaultWhitelist(): SecurityWhitelist {
       ])],
       ['Object', new Set([
         'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable',
-        'toString', 'valueOf', 'toLocaleString'
+        'toString', 'valueOf', 'toLocaleString',
+        'min', 'max', 'abs', 'round', 'floor', 'ceil', 'sqrt', 'pow'
       ])],
       ['*', new Set([
-        'MIN', 'MAX', 'ABS', 'ROUND', 'FLOOR', 'CEIL', 'DOUBLE'
+        'MIN', 'MAX', 'ABS', 'ROUND', 'FLOOR', 'CEIL', 'DOUBLE', 'T'
       ])]
     ]),
     blockDangerousProperties: true,

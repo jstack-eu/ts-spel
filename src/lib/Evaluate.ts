@@ -265,6 +265,29 @@ export const getEvaluator = (
         }
       }
       case "FunctionReference": {
+        // Handle T(java.lang.Math) static calls
+        if (ast.functionName === "T" && ast.args.length === 1) {
+          const staticClass = evaluate(ast.args[0]);
+          if (staticClass === "java.lang.Math") {
+            whitelist.enterCall();
+            // Return a Math proxy object that allows method calls
+            const mathProxy = {
+              min: (...args: number[]) => Math.min(...args),
+              max: (...args: number[]) => Math.max(...args),
+              abs: (value: number) => Math.abs(value),
+              round: (value: number) => Math.round(value),
+              floor: (value: number) => Math.floor(value),
+              ceil: (value: number) => Math.ceil(value),
+              sqrt: (value: number) => Math.sqrt(value),
+              pow: (base: number, exponent: number) => Math.pow(base, exponent),
+              // Mark this as a trusted Math proxy
+              __isMathProxy: true
+            };
+            whitelist.exitCall();
+            return mathProxy;
+          }
+        }
+        
         // Check whitelist before allowing function call
         try {
           whitelist.validateFunctionCall(ast.functionName);
@@ -395,9 +418,12 @@ export const getEvaluator = (
         const head = getHead();
         
         // Global math functions don't need context validation
-        const globalMathFunctions = new Set(['MIN', 'MAX', 'ABS', 'ROUND', 'FLOOR', 'CEIL', 'DOUBLE']);
+        const globalMathFunctions = new Set(['MIN', 'MAX', 'ABS', 'ROUND', 'FLOOR', 'CEIL', 'DOUBLE', 'T']);
         
-        if (!globalMathFunctions.has(ast.methodName)) {
+        // Check if this is a Math proxy object (from T(java.lang.Math))
+        const isMathProxy = head && typeof head === 'object' && (head as any).__isMathProxy;
+        
+        if (!globalMathFunctions.has(ast.methodName) && !isMathProxy) {
           try {
             whitelist.validateMethodCall(head, ast.methodName);
             whitelist.enterCall();
@@ -716,16 +742,31 @@ export const getEvaluator = (
         }
         if (ast.methodName === "ROUND") {
           const args = ast.args.map((arg) => evaluateArg(arg));
-          if (args.length !== 1) {
+          if (args.length < 1 || args.length > 2) {
             whitelist.exitCall();
-            throw new Error("ROUND function requires exactly one argument");
+            throw new Error("ROUND function requires 1 or 2 arguments (value, precision)");
           }
           if (typeof args[0] !== "number") {
             whitelist.exitCall();
-            throw new Error(`ROUND function argument must be a number, got ${typeof args[0]}`);
+            throw new Error(`ROUND function value must be a number, got ${typeof args[0]}`);
           }
+          
+          // Default precision is 0 (round to integer)
+          const precision = args.length === 2 ? args[1] : 0;
+          if (typeof precision !== "number" || !Number.isInteger(precision)) {
+            whitelist.exitCall();
+            throw new Error(`ROUND function precision must be an integer, got ${typeof precision}`);
+          }
+          
           whitelist.exitCall();
-          return Math.round(args[0]);
+          
+          // Handle precision rounding
+          if (precision === 0) {
+            return Math.round(args[0]);
+          } else {
+            const factor = Math.pow(10, precision);
+            return Math.round(args[0] * factor) / factor;
+          }
         }
         if (ast.methodName === "FLOOR") {
           const args = ast.args.map((arg) => evaluateArg(arg));
@@ -761,6 +802,36 @@ export const getEvaluator = (
           }
           whitelist.exitCall();
           return parseFloat(args[0] as any);
+        }
+        // T() static class access - handle as method
+        if (ast.methodName === "T") {
+          const args = ast.args.map((arg) => evaluateArg(arg));
+          if (args.length !== 1) {
+            whitelist.exitCall();
+            throw new Error("T function requires exactly one argument (class name)");
+          }
+          
+          const staticClass = args[0];
+          if (staticClass === "java.lang.Math") {
+            // Return a Math proxy object that allows method calls
+            const mathProxy = {
+              min: (...mathArgs: number[]) => Math.min(...mathArgs),
+              max: (...mathArgs: number[]) => Math.max(...mathArgs),
+              abs: (value: number) => Math.abs(value),
+              round: (value: number) => Math.round(value),
+              floor: (value: number) => Math.floor(value),
+              ceil: (value: number) => Math.ceil(value),
+              sqrt: (value: number) => Math.sqrt(value),
+              pow: (base: number, exponent: number) => Math.pow(base, exponent),
+              // Mark this as a trusted Math proxy
+              __isMathProxy: true
+            };
+            whitelist.exitCall();
+            return mathProxy;
+          }
+          
+          whitelist.exitCall();
+          throw new Error(`Unsupported static class: ${staticClass}`);
         }
         // Safe property access for method lookup
         const valueInTopContext = head && Object.prototype.hasOwnProperty.call(head, ast.methodName) 
