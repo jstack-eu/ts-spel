@@ -262,6 +262,9 @@ export function createDefaultWhitelist() {
             'ISNULL',
             'ISNOTNULL',
             'GET',
+            'get',
+            'add',
+            'date',
             'COALESCE',
             'DEFAULT',
             // Utility functions
@@ -287,8 +290,7 @@ export function createDefaultWhitelist() {
                     'concat', 'every', 'filter', 'find', 'findIndex',
                     'forEach', 'includes', 'indexOf', 'join', 'lastIndexOf',
                     'map', 'reduce', 'reduceRight', 'reverse', 'slice',
-                    'some', 'sort', 'length', 'toString', 'flat', 'flatMap',
-                    'get', 'add', 'size', 'contains'
+                    'some', 'sort', 'length', 'toString', 'flat', 'flatMap'
                 ])],
             ['Date', new Set([
                     'getDate', 'getDay', 'getFullYear', 'getHours',
@@ -310,7 +312,7 @@ export function createDefaultWhitelist() {
                 ])],
             ['Object', new Set([
                     'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable',
-                    'toString', 'valueOf', 'toLocaleString', 'get', 'add'
+                    'toString', 'valueOf', 'toLocaleString'
                 ])]
         ]),
         blockDangerousProperties: true,

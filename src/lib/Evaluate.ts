@@ -160,21 +160,32 @@ export const getEvaluator = (
     allowNull = false
   ) {
     return (left: unknown, right: unknown) => {
+      // Convert Date objects to timestamps
+      const convertToNumber = (val: unknown): unknown => {
+        if (val instanceof Date) {
+          return val.getTime();
+        }
+        return val;
+      };
+      
+      const leftConverted = convertToNumber(left);
+      const rightConverted = convertToNumber(right);
+      
       if (
-        typeof left !== "number" &&
-        !(allowNull && (left === null || typeof left === "undefined"))
+        typeof leftConverted !== "number" &&
+        !(allowNull && (leftConverted === null || typeof leftConverted === "undefined"))
       ) {
         throw new Error(stringify(left) + " is not a float");
       }
       if (
-        typeof right !== "number" &&
-        !(allowNull && (right === null || typeof right === "undefined"))
+        typeof rightConverted !== "number" &&
+        !(allowNull && (rightConverted === null || typeof rightConverted === "undefined"))
       ) {
         throw new Error(stringify(right) + " is not a float");
       }
       return op(
-        (left ?? null) as number | null,
-        (right ?? null) as number | null
+        (leftConverted ?? null) as number | null,
+        (rightConverted ?? null) as number | null
       );
     };
   }
