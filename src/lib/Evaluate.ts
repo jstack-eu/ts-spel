@@ -393,11 +393,20 @@ export const getEvaluator = (
       case "MethodReference": {
         // Check whitelist for method access
         const head = getHead();
-        try {
-          whitelist.validateMethodCall(head, ast.methodName);
+        
+        // Global math functions don't need context validation
+        const globalMathFunctions = new Set(['MIN', 'MAX', 'ABS', 'ROUND', 'FLOOR', 'CEIL', 'DOUBLE']);
+        
+        if (!globalMathFunctions.has(ast.methodName)) {
+          try {
+            whitelist.validateMethodCall(head, ast.methodName);
+            whitelist.enterCall();
+          } catch (error) {
+            throw new Error(`Security violation: ${error.message}`);
+          }
+        } else {
+          // For global math functions, just enter call tracking
           whitelist.enterCall();
-        } catch (error) {
-          throw new Error(`Security violation: ${error.message}`);
         }
         
         const evaluateArg = (arg: Ast) => {
@@ -658,6 +667,100 @@ export const getEvaluator = (
             whitelist.exitCall();
             return result;
           }
+        }
+        // Global math functions that work without context
+        if (ast.methodName === "MIN") {
+          const args = ast.args.map((arg) => evaluateArg(arg));
+          if (args.length === 0) {
+            whitelist.exitCall();
+            throw new Error("MIN function requires at least one argument");
+          }
+          // Validate all arguments are numbers
+          for (const arg of args) {
+            if (typeof arg !== "number") {
+              whitelist.exitCall();
+              throw new Error(`MIN function argument must be a number, got ${typeof arg}`);
+            }
+          }
+          whitelist.exitCall();
+          return Math.min(...(args as number[]));
+        }
+        if (ast.methodName === "MAX") {
+          const args = ast.args.map((arg) => evaluateArg(arg));
+          if (args.length === 0) {
+            whitelist.exitCall();
+            throw new Error("MAX function requires at least one argument");
+          }
+          // Validate all arguments are numbers
+          for (const arg of args) {
+            if (typeof arg !== "number") {
+              whitelist.exitCall();
+              throw new Error(`MAX function argument must be a number, got ${typeof arg}`);
+            }
+          }
+          whitelist.exitCall();
+          return Math.max(...(args as number[]));
+        }
+        if (ast.methodName === "ABS") {
+          const args = ast.args.map((arg) => evaluateArg(arg));
+          if (args.length !== 1) {
+            whitelist.exitCall();
+            throw new Error("ABS function requires exactly one argument");
+          }
+          if (typeof args[0] !== "number") {
+            whitelist.exitCall();
+            throw new Error(`ABS function argument must be a number, got ${typeof args[0]}`);
+          }
+          whitelist.exitCall();
+          return Math.abs(args[0]);
+        }
+        if (ast.methodName === "ROUND") {
+          const args = ast.args.map((arg) => evaluateArg(arg));
+          if (args.length !== 1) {
+            whitelist.exitCall();
+            throw new Error("ROUND function requires exactly one argument");
+          }
+          if (typeof args[0] !== "number") {
+            whitelist.exitCall();
+            throw new Error(`ROUND function argument must be a number, got ${typeof args[0]}`);
+          }
+          whitelist.exitCall();
+          return Math.round(args[0]);
+        }
+        if (ast.methodName === "FLOOR") {
+          const args = ast.args.map((arg) => evaluateArg(arg));
+          if (args.length !== 1) {
+            whitelist.exitCall();
+            throw new Error("FLOOR function requires exactly one argument");
+          }
+          if (typeof args[0] !== "number") {
+            whitelist.exitCall();
+            throw new Error(`FLOOR function argument must be a number, got ${typeof args[0]}`);
+          }
+          whitelist.exitCall();
+          return Math.floor(args[0]);
+        }
+        if (ast.methodName === "CEIL") {
+          const args = ast.args.map((arg) => evaluateArg(arg));
+          if (args.length !== 1) {
+            whitelist.exitCall();
+            throw new Error("CEIL function requires exactly one argument");
+          }
+          if (typeof args[0] !== "number") {
+            whitelist.exitCall();
+            throw new Error(`CEIL function argument must be a number, got ${typeof args[0]}`);
+          }
+          whitelist.exitCall();
+          return Math.ceil(args[0]);
+        }
+        if (ast.methodName === "DOUBLE") {
+          const args = ast.args.map((arg) => evaluateArg(arg));
+          if (args.length !== 1) {
+            whitelist.exitCall();
+            throw new Error("DOUBLE function requires exactly one argument");
+          }
+          whitelist.exitCall();
+          return parseFloat(args[0] as any);
         }
         // Safe property access for method lookup
         const valueInTopContext = head && Object.prototype.hasOwnProperty.call(head, ast.methodName) 

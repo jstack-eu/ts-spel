@@ -345,6 +345,9 @@ export function createDefaultWhitelist(): SecurityWhitelist {
       ['Object', new Set([
         'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable',
         'toString', 'valueOf', 'toLocaleString'
+      ])],
+      ['*', new Set([
+        'MIN', 'MAX', 'ABS', 'ROUND', 'FLOOR', 'CEIL', 'DOUBLE'
       ])]
     ]),
     blockDangerousProperties: true,
