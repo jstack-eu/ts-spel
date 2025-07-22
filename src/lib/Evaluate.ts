@@ -7,6 +7,10 @@ import { RegexValidator, safeCompileRegex } from "./RegexValidator";
 
 const stringify = (obj: unknown) => {
   try {
+    //if value is date, return date string
+    if(obj instanceof Date) {
+      return obj.toISOString();
+    }
     return JSON.stringify(obj);
   } catch (e) {
     if (e.message.startsWith("Converting circular structure to JSON")) {
@@ -177,13 +181,18 @@ export const getEvaluator = (
   const binStringOp =
     <Out extends number | boolean>(op: (a: string, b: string) => Out) =>
     (left: unknown, right: unknown) => {
-      if (typeof left !== "string") {
-        throw new Error(stringify(left) + " is not a string");
+      // Allow strings, numbers, and safe objects for comparison operations
+      const isValidType = (val: unknown) => {
+        return typeof val === "string" || typeof val === "number" || 
+               (val && typeof val === "object" && (val as any).constructor === Object);
+      };
+      if (!isValidType(left)) {
+        throw new Error(stringify(left) + " is not a valid type for string operation");
       }
-      if (typeof right !== "string") {
-        throw new Error(stringify(right) + " is not a string");
+      if (!isValidType(right)) {
+        throw new Error(stringify(right) + " is not a valid type for string operation");
       }
-      return op(left, right);
+      return op(left as string, right as string);
     };
   const find = <E extends unknown>(
     array: E[],
@@ -436,6 +445,46 @@ export const getEvaluator = (
             return currentContext.length;
           }
         }
+        if (ast.methodName === "get") {
+          const currentContext = getHead();
+          const rx = evaluateArg(ast.args[0]);
+          
+          // Validate property access for security
+          if (typeof rx === "string") {
+            try {
+              whitelist.validatePropertyAccess(rx);
+              whitelist.validateObjectAccess(currentContext);
+            } catch (error) {
+              whitelist.exitCall();
+              throw new Error(`Security violation in get(): ${error.message}`);
+            }
+          }
+          
+          whitelist.exitCall();
+          return currentContext?.[rx as keyof typeof currentContext];
+        }
+        if (ast.methodName === "add") {
+          const currentContext = getHead();
+          const rx = evaluateArg(ast.args[0]);
+          
+          // Validate input to prevent prototype pollution
+          if (rx && typeof rx === "object") {
+            if ((rx as any).constructor !== Object && (rx as any).constructor !== Array) {
+              whitelist.exitCall();
+              throw new Error("Security violation: Cannot add unsafe object type");
+            }
+            // Check for dangerous properties
+            if (Object.prototype.hasOwnProperty.call(rx, '__proto__') || 
+                Object.prototype.hasOwnProperty.call(rx, 'constructor') ||
+                Object.prototype.hasOwnProperty.call(rx, 'prototype')) {
+              whitelist.exitCall();
+              throw new Error("Security violation: Cannot add object with dangerous properties");
+            }
+          }
+          
+          whitelist.exitCall();
+          return [...(currentContext as any[]), rx];
+        }
         if (ast.methodName === "contains") {
           const currentContext = getHead();
           if (Array.isArray(currentContext)) {
@@ -529,7 +578,7 @@ export const getEvaluator = (
       case "OpGE": {
         const left = evaluate(ast.left);
         const right = evaluate(ast.right);
-        if (typeof left === "string" && typeof right === "string") {
+        if ((typeof left === "string" || typeof left === "number") && (typeof right === "string" || typeof right === "number")) {
           return binStringOp((a, b) => a >= b)(left, right);
         }
         return binFloatOp((a, b) => a >= b, true)(left, right);
@@ -537,7 +586,7 @@ export const getEvaluator = (
       case "OpGT": {
         const left = evaluate(ast.left);
         const right = evaluate(ast.right);
-        if (typeof left === "string" && typeof right === "string") {
+        if ((typeof left === "string" || typeof left === "number") && (typeof right === "string" || typeof right === "number")) {
           return binStringOp((a, b) => a > b)(left, right);
         }
         return binFloatOp((a, b) => a > b, true)(left, right);
@@ -545,7 +594,7 @@ export const getEvaluator = (
       case "OpLE": {
         const left = evaluate(ast.left);
         const right = evaluate(ast.right);
-        if (typeof left === "string" && typeof right === "string") {
+        if ((typeof left === "string" || typeof left === "number") && (typeof right === "string" || typeof right === "number")) {
           return binStringOp((a, b) => a <= b)(left, right);
         }
         return binFloatOp((a, b) => a <= b, true)(left, right);
@@ -553,7 +602,7 @@ export const getEvaluator = (
       case "OpLT": {
         const left = evaluate(ast.left);
         const right = evaluate(ast.right);
-        if (typeof left === "string" && typeof right === "string") {
+        if ((typeof left === "string" || typeof left === "number") && (typeof right === "string" || typeof right === "number")) {
           return binStringOp((a, b) => a < b)(left, right);
         }
         return binFloatOp((a, b) => a < b, true)(left, right);

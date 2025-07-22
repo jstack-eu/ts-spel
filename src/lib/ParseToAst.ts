@@ -734,7 +734,7 @@ export const parse = function (
             const arg = expression();
             if (arg) {
               args.push(arg);
-              precededByComma = Boolean(utils.char(","));
+              precededByComma = Boolean(utils.char(",")) || Boolean(utils.char("T"));
               return arg;
             } else if (graceful && precededByComma) {
               args.push(null);
