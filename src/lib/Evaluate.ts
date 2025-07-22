@@ -313,6 +313,28 @@ export const getEvaluator = (
             whitelist.exitCall();
             return mathProxy;
           }
+          
+          if (staticClass === "eu.jstack.jflow.core.operators.FlowUtils") {
+            whitelist.enterCall();
+            // Return a FlowUtils proxy object that allows method calls
+            const flowUtilsProxy = {
+              date: (dateString: string) => {
+                // Parse date string to Date object
+                if (typeof dateString !== 'string') {
+                  throw new Error(`FlowUtils.date() requires a string argument, got ${typeof dateString}`);
+                }
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                  throw new Error(`FlowUtils.date() received invalid date string: ${dateString}`);
+                }
+                return date;
+              },
+              // Mark this as a trusted FlowUtils proxy
+              __isFlowUtilsProxy: true
+            };
+            whitelist.exitCall();
+            return flowUtilsProxy;
+          }
         }
         
         // Check whitelist before allowing function call
@@ -450,7 +472,10 @@ export const getEvaluator = (
         // Check if this is a Math proxy object (from T(java.lang.Math))
         const isMathProxy = head && typeof head === 'object' && (head as any).__isMathProxy;
         
-        if (!globalMathFunctions.has(ast.methodName) && !isMathProxy) {
+        // Check if this is a FlowUtils proxy object (from T(eu.jstack.jflow.core.operators.FlowUtils))
+        const isFlowUtilsProxy = head && typeof head === 'object' && (head as any).__isFlowUtilsProxy;
+        
+        if (!globalMathFunctions.has(ast.methodName) && !isMathProxy && !isFlowUtilsProxy) {
           try {
             whitelist.validateMethodCall(head, ast.methodName);
             whitelist.enterCall();
@@ -881,6 +906,29 @@ export const getEvaluator = (
             };
             whitelist.exitCall();
             return mathProxy;
+          }
+          
+          if (staticClass === "eu.jstack.jflow.core.operators.FlowUtils") {
+            // Return a FlowUtils proxy object that allows method calls
+            const flowUtilsProxy = {
+              date: (dateString: string) => {
+                // Parse date string to Date object
+                if (typeof dateString !== 'string') {
+                  whitelist.exitCall();
+                  throw new Error(`FlowUtils.date() requires a string argument, got ${typeof dateString}`);
+                }
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                  whitelist.exitCall();
+                  throw new Error(`FlowUtils.date() received invalid date string: ${dateString}`);
+                }
+                return date;
+              },
+              // Mark this as a trusted FlowUtils proxy
+              __isFlowUtilsProxy: true
+            };
+            whitelist.exitCall();
+            return flowUtilsProxy;
           }
           
           whitelist.exitCall();

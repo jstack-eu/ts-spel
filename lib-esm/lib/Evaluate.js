@@ -278,6 +278,27 @@ export var getEvaluator = function (rootContext, functionsAndVariables, options)
                         whitelist.exitCall();
                         return mathProxy;
                     }
+                    if (staticClass === "eu.jstack.jflow.core.operators.FlowUtils") {
+                        whitelist.enterCall();
+                        // Return a FlowUtils proxy object that allows method calls
+                        var flowUtilsProxy = {
+                            date: function (dateString) {
+                                // Parse date string to Date object
+                                if (typeof dateString !== 'string') {
+                                    throw new Error("FlowUtils.date() requires a string argument, got ".concat(typeof dateString));
+                                }
+                                var date = new Date(dateString);
+                                if (isNaN(date.getTime())) {
+                                    throw new Error("FlowUtils.date() received invalid date string: ".concat(dateString));
+                                }
+                                return date;
+                            },
+                            // Mark this as a trusted FlowUtils proxy
+                            __isFlowUtilsProxy: true
+                        };
+                        whitelist.exitCall();
+                        return flowUtilsProxy;
+                    }
                 }
                 // Check whitelist before allowing function call
                 try {
@@ -403,7 +424,9 @@ export var getEvaluator = function (rootContext, functionsAndVariables, options)
                 var globalMathFunctions = new Set(['MIN', 'MAX', 'ABS', 'ROUND', 'FLOOR', 'CEIL', 'DOUBLE', 'T']);
                 // Check if this is a Math proxy object (from T(java.lang.Math))
                 var isMathProxy = head && typeof head === 'object' && head.__isMathProxy;
-                if (!globalMathFunctions.has(ast.methodName) && !isMathProxy) {
+                // Check if this is a FlowUtils proxy object (from T(eu.jstack.jflow.core.operators.FlowUtils))
+                var isFlowUtilsProxy = head && typeof head === 'object' && head.__isFlowUtilsProxy;
+                if (!globalMathFunctions.has(ast.methodName) && !isMathProxy && !isFlowUtilsProxy) {
                     try {
                         whitelist.validateMethodCall(head, ast.methodName);
                         whitelist.enterCall();
@@ -824,6 +847,28 @@ export var getEvaluator = function (rootContext, functionsAndVariables, options)
                         };
                         whitelist.exitCall();
                         return mathProxy;
+                    }
+                    if (staticClass === "eu.jstack.jflow.core.operators.FlowUtils") {
+                        // Return a FlowUtils proxy object that allows method calls
+                        var flowUtilsProxy = {
+                            date: function (dateString) {
+                                // Parse date string to Date object
+                                if (typeof dateString !== 'string') {
+                                    whitelist.exitCall();
+                                    throw new Error("FlowUtils.date() requires a string argument, got ".concat(typeof dateString));
+                                }
+                                var date = new Date(dateString);
+                                if (isNaN(date.getTime())) {
+                                    whitelist.exitCall();
+                                    throw new Error("FlowUtils.date() received invalid date string: ".concat(dateString));
+                                }
+                                return date;
+                            },
+                            // Mark this as a trusted FlowUtils proxy
+                            __isFlowUtilsProxy: true
+                        };
+                        whitelist.exitCall();
+                        return flowUtilsProxy;
                     }
                     whitelist.exitCall();
                     throw new Error("Unsupported static class: ".concat(staticClass));
