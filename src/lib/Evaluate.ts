@@ -318,16 +318,27 @@ export const getEvaluator = (
             whitelist.enterCall();
             // Return a FlowUtils proxy object that allows method calls
             const flowUtilsProxy = {
-              date: (dateString: string) => {
-                // Parse date string to Date object
-                if (typeof dateString !== 'string') {
-                  throw new Error(`FlowUtils.date() requires a string argument, got ${typeof dateString}`);
+              date: (dateInput: string | Date | object) => {
+                // Handle both string and Date object inputs
+                if (typeof dateInput === 'string') {
+                  const date = new Date(dateInput);
+                  if (isNaN(date.getTime())) {
+                    throw new Error(`FlowUtils.date() received invalid date string: ${dateInput}`);
+                  }
+                  return date;
+                } else if (dateInput instanceof Date) {
+                  return dateInput;
+                } else if (dateInput && typeof dateInput === 'object') {
+                  // Try to convert object to date if it has date-like properties
+                  const dateStr = dateInput.toString();
+                  const date = new Date(dateStr);
+                  if (!isNaN(date.getTime())) {
+                    return date;
+                  }
+                  throw new Error(`FlowUtils.date() received invalid date object: ${dateStr}`);
+                } else {
+                  throw new Error(`FlowUtils.date() requires a string or Date argument, got ${typeof dateInput}`);
                 }
-                const date = new Date(dateString);
-                if (isNaN(date.getTime())) {
-                  throw new Error(`FlowUtils.date() received invalid date string: ${dateString}`);
-                }
-                return date;
               },
               // Mark this as a trusted FlowUtils proxy
               __isFlowUtilsProxy: true
@@ -911,18 +922,30 @@ export const getEvaluator = (
           if (staticClass === "eu.jstack.jflow.core.operators.FlowUtils") {
             // Return a FlowUtils proxy object that allows method calls
             const flowUtilsProxy = {
-              date: (dateString: string) => {
-                // Parse date string to Date object
-                if (typeof dateString !== 'string') {
+              date: (dateInput: string | Date | object) => {
+                // Handle both string and Date object inputs
+                if (typeof dateInput === 'string') {
+                  const date = new Date(dateInput);
+                  if (isNaN(date.getTime())) {
+                    whitelist.exitCall();
+                    throw new Error(`FlowUtils.date() received invalid date string: ${dateInput}`);
+                  }
+                  return date;
+                } else if (dateInput instanceof Date) {
+                  return dateInput;
+                } else if (dateInput && typeof dateInput === 'object') {
+                  // Try to convert object to date if it has date-like properties
+                  const dateStr = dateInput.toString();
+                  const date = new Date(dateStr);
+                  if (!isNaN(date.getTime())) {
+                    return date;
+                  }
                   whitelist.exitCall();
-                  throw new Error(`FlowUtils.date() requires a string argument, got ${typeof dateString}`);
-                }
-                const date = new Date(dateString);
-                if (isNaN(date.getTime())) {
+                  throw new Error(`FlowUtils.date() received invalid date object: ${dateStr}`);
+                } else {
                   whitelist.exitCall();
-                  throw new Error(`FlowUtils.date() received invalid date string: ${dateString}`);
+                  throw new Error(`FlowUtils.date() requires a string or Date argument, got ${typeof dateInput}`);
                 }
-                return date;
               },
               // Mark this as a trusted FlowUtils proxy
               __isFlowUtilsProxy: true

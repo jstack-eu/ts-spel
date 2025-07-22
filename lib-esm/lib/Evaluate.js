@@ -282,16 +282,30 @@ export var getEvaluator = function (rootContext, functionsAndVariables, options)
                         whitelist.enterCall();
                         // Return a FlowUtils proxy object that allows method calls
                         var flowUtilsProxy = {
-                            date: function (dateString) {
-                                // Parse date string to Date object
-                                if (typeof dateString !== 'string') {
-                                    throw new Error("FlowUtils.date() requires a string argument, got ".concat(typeof dateString));
+                            date: function (dateInput) {
+                                // Handle both string and Date object inputs
+                                if (typeof dateInput === 'string') {
+                                    var date = new Date(dateInput);
+                                    if (isNaN(date.getTime())) {
+                                        throw new Error("FlowUtils.date() received invalid date string: ".concat(dateInput));
+                                    }
+                                    return date;
                                 }
-                                var date = new Date(dateString);
-                                if (isNaN(date.getTime())) {
-                                    throw new Error("FlowUtils.date() received invalid date string: ".concat(dateString));
+                                else if (dateInput instanceof Date) {
+                                    return dateInput;
                                 }
-                                return date;
+                                else if (dateInput && typeof dateInput === 'object') {
+                                    // Try to convert object to date if it has date-like properties
+                                    var dateStr = dateInput.toString();
+                                    var date = new Date(dateStr);
+                                    if (!isNaN(date.getTime())) {
+                                        return date;
+                                    }
+                                    throw new Error("FlowUtils.date() received invalid date object: ".concat(dateStr));
+                                }
+                                else {
+                                    throw new Error("FlowUtils.date() requires a string or Date argument, got ".concat(typeof dateInput));
+                                }
                             },
                             // Mark this as a trusted FlowUtils proxy
                             __isFlowUtilsProxy: true
@@ -851,18 +865,33 @@ export var getEvaluator = function (rootContext, functionsAndVariables, options)
                     if (staticClass === "eu.jstack.jflow.core.operators.FlowUtils") {
                         // Return a FlowUtils proxy object that allows method calls
                         var flowUtilsProxy = {
-                            date: function (dateString) {
-                                // Parse date string to Date object
-                                if (typeof dateString !== 'string') {
-                                    whitelist.exitCall();
-                                    throw new Error("FlowUtils.date() requires a string argument, got ".concat(typeof dateString));
+                            date: function (dateInput) {
+                                // Handle both string and Date object inputs
+                                if (typeof dateInput === 'string') {
+                                    var date = new Date(dateInput);
+                                    if (isNaN(date.getTime())) {
+                                        whitelist.exitCall();
+                                        throw new Error("FlowUtils.date() received invalid date string: ".concat(dateInput));
+                                    }
+                                    return date;
                                 }
-                                var date = new Date(dateString);
-                                if (isNaN(date.getTime())) {
-                                    whitelist.exitCall();
-                                    throw new Error("FlowUtils.date() received invalid date string: ".concat(dateString));
+                                else if (dateInput instanceof Date) {
+                                    return dateInput;
                                 }
-                                return date;
+                                else if (dateInput && typeof dateInput === 'object') {
+                                    // Try to convert object to date if it has date-like properties
+                                    var dateStr = dateInput.toString();
+                                    var date = new Date(dateStr);
+                                    if (!isNaN(date.getTime())) {
+                                        return date;
+                                    }
+                                    whitelist.exitCall();
+                                    throw new Error("FlowUtils.date() received invalid date object: ".concat(dateStr));
+                                }
+                                else {
+                                    whitelist.exitCall();
+                                    throw new Error("FlowUtils.date() requires a string or Date argument, got ".concat(typeof dateInput));
+                                }
                             },
                             // Mark this as a trusted FlowUtils proxy
                             __isFlowUtilsProxy: true
